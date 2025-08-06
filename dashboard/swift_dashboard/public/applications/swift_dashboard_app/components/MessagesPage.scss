@@ -1,0 +1,209 @@
+// Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+@import "./commonStyles.scss";
+
+.container {
+    width: 100%;
+    max-width: 75rem; /* 1200px */
+    margin: 0 auto;
+    padding: 0.5rem; /* 20px */
+    font-family: Arial, sans-serif;
+    min-height: 100vh; /* Ensure the container takes up the full height of the viewport */
+    display: flex;
+    flex-direction: column;
+}
+
+h2 {
+    background: linear-gradient(to top, #646363, #000000); /* Gradient colors */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1.5625rem; /* 25px */
+    position: relative; /* Required for positioning the pseudo-element */
+    padding-bottom: 0.625rem; /* 10px */
+    border-bottom: none; /* Remove the original border */
+}
+
+h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 99.6%; /* This controls the length of the border - adjust as needed */
+    height: 0.1rem; /* This controls the thickness */
+    background-color: #2f2e2e; /* Border color */
+}
+
+.detailView {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex-grow: 1; /* Allow the detail view to grow and take up available space */
+}
+
+.singleRow {
+    margin-bottom: 1.25rem; /* 20px */
+    box-shadow: 0 0.125rem 0.3125rem rgba(0,0,0,0.1); /* 2px 5px */
+    border-radius: 0.25rem; /* 4px */
+    overflow: hidden;
+}
+
+.messagePanels {
+    display: flex;
+    flex-direction: row;
+    gap: 1.875rem; /* 30px */
+    margin-top: 1.25rem; /* 20px */
+}
+
+@media (max-width: 48rem) { /* 768px */
+    .messagePanels {
+        flex-direction: column;
+    }
+}
+
+.panel {
+    flex: 1;
+    border: 0.0625rem solid #e3e3e3; /* 1px */
+    border-radius: 0.375rem; /* 6px */
+    padding: 1.25rem; /* 20px */
+    background-color: #eae5e5;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.05); /* 2px 4px */
+    max-height: 40rem; /* Set a fixed height for the panel */
+    overflow-y: auto; /* Enable vertical scrolling */
+}
+
+.panel h2 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 0.0625rem solid #ddd; /* 1px */
+    padding-bottom: 0.625rem; /* 10px */
+    margin-bottom: 0.9375rem; /* 15px */
+}
+
+.messageContent {
+    white-space: pre-wrap;
+    overflow-x: auto;
+    overflow-y: auto;
+    background-color: rgb(244, 241, 241);
+    border: 0.0625rem solid #eee; /* 1px */
+    padding: 0.9375rem; /* 15px */
+    border-radius: 0.25rem; /* 4px */
+    height: 30rem; /* 200px */
+    line-height: 1.5;
+    font-family: 'Courier New', monospace;
+    color: #333;
+}
+
+/* Custom scrollbar styles */
+.messageContent::-webkit-scrollbar {
+    width: 0.5rem; /* Smaller width for the scrollbar */
+    height: 0.5rem;
+}
+
+.messageContent::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Background color of the scrollbar track */
+    border-radius: 0.25rem; /* Rounded edges for the scrollbar track */
+}
+
+.messageContent::-webkit-scrollbar-thumb {
+    background: #888; /* Color of the scrollbar thumb */
+    border-radius: 0.25rem; /* Rounded edges for the scrollbar thumb */
+}
+
+.messageContent::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Darker color when hovering over the scrollbar thumb */
+}
+  
+  .filterButtons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-right: 0.3rem;
+  }
+  
+  .applyFiltersBtn, .clearFiltersBtn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s ease;
+  }
+  
+  .applyFiltersBtn {
+    background-color: $btn-color;
+    color: white;
+    border: none;
+  }
+  
+  .applyFiltersBtn:hover:not(:disabled) {
+    background-color: $btn-hover-color;
+  }
+  
+  .clearFiltersBtn {
+    background-color: $btn-color;
+    color: #ffffff;
+    border: none;
+  }
+  
+  .clearFiltersBtn:hover:not(:disabled) {
+    background-color: $btn-hover-color;
+  }
+  
+  .applyFiltersBtn:disabled, .clearFiltersBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .filterLoadingOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    border-radius: 4px;
+  }
+  
+  .filterInfo {
+    color: #666;
+    font-size: 14px;
+  }
+  
+  /* Make the container scroll to top more smoothly */
+  .container {
+    scroll-behavior: smooth;
+  }
+  
+  /* Improve loading and error displays */
+  .loadingIndicator, .error {
+    padding: 2rem;
+    text-align: center;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 1rem;
+  }
+  
+  .error {
+    color: #d32f2f;
+    background-color: #ffebee;
+    border: 1px solid #ffcdd2;
+  }

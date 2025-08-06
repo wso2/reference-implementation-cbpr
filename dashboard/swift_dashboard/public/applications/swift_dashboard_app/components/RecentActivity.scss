@@ -1,0 +1,176 @@
+// Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+/* Styles for the actual <table> element */
+.recent-activity-actual-table {
+    width: 100%; /* Make the table take up the full width */
+    border-collapse: collapse; /* Merges adjacent cell borders into a single border */
+    table-layout: fixed; /* VERY IMPORTANT: Forces columns to respect defined widths */
+}
+
+/* Styles for all table cells (header and data) */
+.recent-activity-actual-table th,
+.recent-activity-actual-table td {
+    padding: 0.625rem; /* Consistent padding for all cells */
+    font-size: 0.75rem; /* Consistent font size */
+    text-align: left; /* Default text alignment */
+    border-bottom: 0.0625rem solid #e0e0e0; /* Lighter border for rows */
+    overflow: hidden; /* Hide content that exceeds cell width */
+    text-overflow: ellipsis; /* Show "..." for overflowed text */
+    white-space: nowrap; /* Prevent text from wrapping within cells */
+  }
+  
+/* Styles for table headers */
+.recent-activity-actual-table th {
+    background-color: #f9f9f9; /* Light background for headers */
+    font-weight: bold;
+    color: #333;
+    /* Optional: position: sticky; top: 0; z-index: 1; for sticky headers if table scrolls */
+}
+
+/* No bottom border for the last row's cells to prevent double border with container if applicable */
+.recent-activity-actual-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  
+/* Row hover effect */
+  .recent-activity-row:hover {
+    background-color: #cdcfd1; /* Existing hover style, but applied to the native tr */
+    cursor: pointer; /* Indicates it's clickable */
+}
+
+.col-id, .recent-activity-id {
+    width: 35%; /* Example width for ID */
+}
+
+.col-time, .recent-activity-time {
+    width: 25%; /* Example width for Time (it's long) */
+  }
+  
+.col-type, .recent-activity-type {
+    width: 20%; /* Example width for Type */
+}
+
+.col-direction, .recent-activity-direction {
+    width: 15%; /* Example width for Direction */
+    text-align: center; /* Center the "Inward"/"Outward" text */
+  }
+
+.col-status, .recent-activity-status {
+    width: 25%; /* Example width for Status */
+    text-align: center; /* Center the status pill */
+  }
+  
+.recent-activity-status.successful {
+    color: #ffffff;
+    background-color: #6BAE92;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.75rem;
+    display: inline-block; /* Crucial for padding/border-radius to apply correctly */
+    min-width: 5rem; /* Ensure consistent width for status pills if "Failed" is wider */
+}
+
+.recent-activity-status.failed {
+    color: #ffffff;
+    background-color: #bd3412b0;
+    padding: 0.125rem 1.3125rem; /* This padding makes "Failed" wider */
+    border-radius: 0.75rem;
+    display: inline-block; /* Crucial for padding/border-radius to apply correctly */
+    min-width: 5rem; /* Match successful width, or adjust as needed */
+  }
+
+  .no-data-message-activity {
+    color: #7f8c8d;
+    font-style: italic;
+    padding: 6rem 0 0 8.5rem;
+    font-size: 1rem;
+  }
+
+  .viewAllButtonContainer {
+    margin-left: auto;
+    margin-right: 1rem;
+    margin-bottom: 0.6rem;
+  }
+  
+  .viewAllButton {
+    background-color: #2078C2;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5625rem;
+    border-radius: 0.25rem;
+    font-size: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .viewAllButton:hover {
+    background-color: #185990;;
+  }
+
+.loading-indicator-activity {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    height: 10rem;
+    gap: 0.75rem;
+  }
+
+  .loading-text {
+    font-size: 1rem;
+    color: #0c0c0c;
+  }
+  
+  .spinner-activity {
+    width: 1.875rem;
+    height: 1.875rem;
+    border: 0.1875rem solid rgba(0, 0, 0, 0.1);
+    border-top-color: #1e1f20;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .error-message-activity {
+    color: #e74c3c;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    margin-top: 6.5rem;
+  }
+  
+  .error-message-activity button {
+    background: #070707;
+    color: white;
+    border: none;
+    padding: 0.3125rem 0.9375rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    margin-top: 0.625rem;
+  }
+  
+  .error-message-activity button:hover {
+    background: #3f4041;
+  }

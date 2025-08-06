@@ -1,0 +1,5 @@
+# Except this file
+!.gitignore
+
+# Dependency directories
+node_modules/
