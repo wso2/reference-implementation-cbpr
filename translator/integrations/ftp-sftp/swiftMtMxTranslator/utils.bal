@@ -119,45 +119,39 @@ function appendToDashboardLogs(string listenerName, string orgnlMessage, string 
     time:Utc currentTime = time:utcNow();
     time:Civil civilTime = time:utcToCivil(currentTime);
     string|error timestamp = time:civilToString(civilTime);
-    if timestamp is error {
-        log:printError(string `[Listener - ${listenerName}][${msgId}] Error while generating timestamp.
-            Setting default value.`, err = timestamp.toBalString());
-        timestamp = "0000-00-00T00:00:00Z";
-    }
-    else {
+    string timeString = timestamp is string ? timestamp : "0000-00-00T00:00:00Z";
 
-        // Create the JSON log entry
-        json logEntry = {
-            "id": msgId,
-            "mtMessageType": mtmsgType,
-            "mxMessageType": mxMsgType,
-            "currency": currency,
-            "amount": amount,
-            "date": timestamp,
-            "direction": direction,
-            "translatedMessage": translatedMessage,
-            "status": status,
-            "originalMessage": orgnlMessage,
-            "fieldError": errorMsg.includes("required") ? errorMsg : "",
-            "notSupportedError": errorMsg.toLowerAscii().includes("not supported") ? errorMsg : "",
-            "invalidError": errorMsg.toLowerAscii().includes("invalid")
-                && !errorMsg.toLowerAscii().includes("not supported") ? errorMsg : "",
-            "otherError": !errorMsg.includes("required") && !errorMsg.includes("not supported")
-                && !errorMsg.toLowerAscii().includes("invalid") ? errorMsg : ""
-        };
+    // Create the JSON log entry
+    json logEntry = {
+        "id": msgId,
+        "mtMessageType": mtmsgType,
+        "mxMessageType": mxMsgType,
+        "currency": currency,
+        "amount": amount,
+        "date": timeString,
+        "direction": direction,
+        "translatedMessage": translatedMessage,
+        "status": status,
+        "originalMessage": orgnlMessage,
+        "fieldError": errorMsg.includes("required") ? errorMsg : "",
+        "notSupportedError": errorMsg.toLowerAscii().includes("not supported") ? errorMsg : "",
+        "invalidError": errorMsg.toLowerAscii().includes("invalid")
+            && !errorMsg.toLowerAscii().includes("not supported") ? errorMsg : "",
+        "otherError": !errorMsg.includes("required") && !errorMsg.includes("not supported")
+            && !errorMsg.toLowerAscii().includes("invalid") ? errorMsg : ""
+    };
 
-        // Convert to JSON string and append newline
-        string jsonLogString = logEntry.toJsonString() + "\n";
+    // Convert to JSON string and append newline
+    string jsonLogString = logEntry.toJsonString() + "\n";
 
-        // Write to file
-        io:FileWriteOption option = OPTION_APPEND;
-        time:Utc utc = time:utcNow();
-        string date = time:utcToString(utc).substring(0, 9);
-        string filePath = log.dashboardLogFilePath + "dashboard" + date + ".log";
-        io:Error? fileWriteString = io:fileWriteString(filePath, jsonLogString, option);
-        if fileWriteString is io:Error {
-            handleLogFailure(listenerName, msgId, fileWriteString);
-        }
+    // Write to file
+    io:FileWriteOption option = OPTION_APPEND;
+    time:Utc utc = time:utcNow();
+    string date = time:utcToString(utc).substring(0, 9);
+    string filePath = log.dashboardLogFilePath + "dashboard" + date + ".log";
+    io:Error? fileWriteString = io:fileWriteString(filePath, jsonLogString, option);
+    if fileWriteString is io:Error {
+        handleLogFailure(listenerName, msgId, fileWriteString);
     }
 }
 

@@ -35,11 +35,12 @@ public function initLogRotator() {
     time:Civil delayUntilMidnight = calculateDelayUntilMidnight();
     
     // Schedule recurring execution every 24 hours starting from next midnight
-    task:JobId|task:Error recurringResult = task:scheduleJobRecurByFrequency(logRotationJob, 60, maxCount = -1, startTime = delayUntilMidnight);
+    task:JobId|task:Error recurringResult = task:scheduleJobRecurByFrequency(logRotationJob, 86400, maxCount = -1, 
+        startTime = delayUntilMidnight);
     if recurringResult is task:Error {
         log:printError("Failed to schedule log rotation task", err = recurringResult.toBalString());
     } else {
-        log:printInfo(string `Log rotation task scheduled successfully to run daily at 12 AM (starting in ${delayUntilMidnight.toString()})`);
+        log:printInfo(string `Log rotation task scheduled successfully to run daily at 12 AM`);
     }
 }
 
