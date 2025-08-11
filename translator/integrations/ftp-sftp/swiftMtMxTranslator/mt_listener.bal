@@ -55,7 +55,7 @@ service on mtFileListener {
 
     function init() {
         time:Utc utc = time:utcNow();
-        string date = time:utcToString(utc).substring(0, 9);
+        string date = time:utcToString(utc).substring(0, 10);
         string filePath = log.ballerinaLogFilePath + "/ballerina" + date + ".log";
         log:Error? outputFile = log:setOutputFile(filePath, log:APPEND);
         if outputFile is log:Error {
@@ -147,7 +147,7 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
                 return;
             }
             handleSuccess(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage,
-                    postProcessedMsg.toBalString(), fileName, OUTWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt, "xml");
+                    postProcessedMsg, fileName, OUTWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt, "xml");
         } else {
             // If the translation fails, log the error and send the original message to the failed directory.
             log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while translating MT message to MX.`,
@@ -200,7 +200,7 @@ function postProcessMtMxMessage(xml message, string originalMessage, string logI
     log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Post-processing message: ${message.toBalString()}`);
     http:Request clientRequest = new;
     clientRequest.setHeader("Content-Type", "application/json");
-    clientRequest.setPayload({"message": message.toString(), "originalMessage": originalMessage});
+    clientRequest.setPayload({"translatedMessage": message.toString(), "originalMessage": originalMessage});
 
     xml|error mtmxClientResponse = mtmxClient->post(MT_MX_POST_PROCESS_CONTEXT_PATH, clientRequest);
 

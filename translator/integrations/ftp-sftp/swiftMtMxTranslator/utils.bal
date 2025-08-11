@@ -85,13 +85,13 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
 # + amount - amount of transaction  
 # + fileType - file type
 function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, string listenerName, string logId, 
-        string incomingMsg, string translatedMsg, string fileId, string direction, string mtmsgType, string mxMsgType, 
+        string incomingMsg, string|xml translatedMsg, string fileId, string direction, string mtmsgType, string mxMsgType, 
         string currency = NOT_AVAILABLE, string amount = NOT_AVAILABLE, string fileType = "txt") {
 
     log:printInfo(string `[Listner - ${listenerName}][${logId}] Message translated successfully. Sending to FTP.`);
     sendToSourceFTP(sourceClient, logId, SUCCESS, incomingMsg, fileId);
     sendToDestinationFTP(destinationClient, logId, translatedMsg, fileId, fileType);
-    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg, msgId = fileId,
+    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg.toBalString(), msgId = fileId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = currency,
             amount = amount, status = SUCCESSFUL);
     cleanTempFile(fileId, logId, listenerName);
@@ -220,7 +220,7 @@ function sendToSourceFTP(FtpClient ftpClient, string logId, string status, strin
 # + message - message content to be sent
 # + msgId - message id 
 # + fileType - file type of the message
-function sendToDestinationFTP(FtpClient ftpClient, string logId, string message, string msgId, string fileType) {
+function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml message, string msgId, string fileType) {
 
     log:printDebug(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
         Sending message to FTP. Message ID: ${msgId}`);

@@ -5,8 +5,8 @@ name = "MT MX Listener 1"
 protocol = "ftp"
 host = "127.0.0.1"
 port = 23
-username = "pan"
-password = "pan"
+username = "admin"
+password = "admin"
 # Path to the private key file for SFTP, if using SFTP
 pvtKeyPath = ""
 # Password for the private key, if applicable
@@ -44,8 +44,8 @@ name = "MX MT Listener 1"
 protocol = "ftp"
 host = "127.0.0.1"
 port = 23
-username = "pan"
-password = "pan"
+username = "admin"
+password = "admin"
 # Path to the private key file for SFTP, if using SFTP
 pvtKeyPath = ""
 # Password for the private key, if applicable

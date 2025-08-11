@@ -42,7 +42,7 @@ service on mxFileListener {
             // performs a read operation to read the lines as an array.
             string inMsg = check io:fileReadString(string `/tmp/swiftTranslator/${addedFile.name}`);
 
-            log:printInfo(string `[Listner - ${mxMtListenerName}][${logId}] Incoming message: ${inMsg}`);
+            log:printDebug(string `[Listner - ${mxMtListenerName}][${logId}] Incoming message: ${inMsg}`);
 
             // Identify if the incoming message is an ISO20022 message.
             if mtRegex.isFullMatch(inMsg) {
@@ -185,7 +185,7 @@ function postProcessMxMtMessage(string message, string originalMessage, string l
     log:printDebug(string `[Listner - ${mxMtListenerName}][${logId}] Post-processing message: ${message.toBalString()}`);
     http:Request clientRequest = new;
     clientRequest.setHeader("Content-Type", "application/json");
-    clientRequest.setPayload({"message": message.toString(), "originalMessage": originalMessage});
+    clientRequest.setPayload({"translatedMessage": message.toString(), "originalMessage": originalMessage});
 
     string|error mxmtClientResponse = mxmtClient->post(MX_MT_POST_PROCESS_CONTEXT_PATH, clientRequest);
 

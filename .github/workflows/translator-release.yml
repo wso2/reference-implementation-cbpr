@@ -105,84 +105,10 @@ jobs:
           
           # Copy configuration files
           cp ${{ env.PROJECT_PATH }}/Config.toml ${RELEASE_DIR}/Config.sample.toml
-          cp ${{ env.PROJECT_PATH }}/Ballerina.toml ${RELEASE_DIR}/
           
           # Copy source files for reference
           mkdir -p ${RELEASE_DIR}/src
           cp ${{ env.PROJECT_PATH }}/*.bal ${RELEASE_DIR}/src/
-          
-          # Create installation script
-          cat > ${RELEASE_DIR}/install.sh << 'EOF'
-          #!/bin/bash
-          set -e
-          
-          echo "SWIFT MT/MX Translator Installation Script"
-          echo "=========================================="
-          
-          # Check Java
-          if ! command -v java &> /dev/null; then
-              echo "Error: Java 17+ is required but not installed."
-              exit 1
-          fi
-          
-          JAVA_VERSION=$(java -version 2>&1 | grep -oP 'version "?(1\.)?\K\d+' | head -1)
-          if [[ $JAVA_VERSION -lt 17 ]]; then
-              echo "Error: Java 17+ is required. Found Java $JAVA_VERSION"
-              exit 1
-          fi
-          
-          # Install directory
-          INSTALL_DIR="/opt/swift-translator"
-          sudo mkdir -p $INSTALL_DIR
-          
-          # Copy files
-          echo "Installing to $INSTALL_DIR..."
-          sudo cp *.jar $INSTALL_DIR/
-          sudo cp Config.sample.toml $INSTALL_DIR/Config.toml
-          sudo chmod +x $INSTALL_DIR/*.jar
-          
-          # Create systemd service
-          sudo tee /etc/systemd/system/swift-translator.service > /dev/null << 'SERVICE_EOF'
-          [Unit]
-          Description=SWIFT MT/MX Translator Service
-          After=network.target
-          
-          [Service]
-          Type=simple
-          User=swift-translator
-          Group=swift-translator
-          WorkingDirectory=/opt/swift-translator
-          ExecStart=/usr/bin/java -jar /opt/swift-translator/swiftMtMxTranslator.jar
-          Restart=always
-          RestartSec=10
-          Environment=JAVA_OPTS="-Xmx512m -Xms256m"
-          
-          [Install]
-          WantedBy=multi-user.target
-          SERVICE_EOF
-          
-          # Create user
-          if ! id "swift-translator" &>/dev/null; then
-              sudo useradd -r -s /bin/false swift-translator
-          fi
-          
-          sudo chown -R swift-translator:swift-translator $INSTALL_DIR
-          
-          # Enable service
-          sudo systemctl daemon-reload
-          sudo systemctl enable swift-translator
-          
-          echo ""
-          echo "Installation completed successfully!"
-          echo ""
-          echo "Next steps:"
-          echo "1. Edit configuration: sudo nano $INSTALL_DIR/Config.toml"
-          echo "2. Start service: sudo systemctl start swift-translator"
-          echo "3. Check status: sudo systemctl status swift-translator"
-          echo "4. View logs: sudo journalctl -u swift-translator -f"
-          EOF
-          
-          chmod +x ${RELEASE_DIR}/install.sh
           
           # Create README
           cat > ${RELEASE_DIR}/README.md << 'EOF'
@@ -190,14 +116,7 @@ jobs:
           
           This release contains the SWIFT MT/MX translation service for FTP/SFTP integration.
           
-          ## Quick Start
-          
-          ### Automated Installation (Linux)
-          ```bash
-          sudo ./install.sh
-          ```
-          
-          ### Manual Installation
+          ### Installation
           
           1. **Prerequisites**: Java 17+
           2. **Run**: `java -jar swiftMtMxTranslator.jar`
@@ -205,16 +124,7 @@ jobs:
           
           ## Configuration
           
-          Copy `Config.sample.toml` to `Config.toml` and update:
-          
-          ```toml
-          [ftp_sftp_listener]
-          host = "localhost"
-          port = 21
-          username = "your_username" 
-          password = "your_password"
-          protocol = "FTP"  # or "SFTP"
-          ```
+          Copy `Config.sample.toml` to `Config.toml` and update the configurations accordingly.
           
           ## Support
           
