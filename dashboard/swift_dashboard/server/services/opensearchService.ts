@@ -14,7 +14,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import { OpenSearchClient } from ".../../../src/core/server";
+import { OpenSearchClient } from "../../../src/core/server";
 import { env } from "process";
 import { PluginContext, MessageDocument, LogDocument } from "../types";
 

@@ -34,7 +34,7 @@ import ballerina/uuid;
 # + direction - direction of the message (inward or outward)
 function handleError(FtpClient ftpClient, string listenerName, string logId, string incomingMsg, error errorMsg,
         string fileId, string direction) {
-    log:printInfo(string `[Listner - ${listenerName}][${logId}] Message translation failed. Sending to FTP.`);
+    log:printInfo(string `[Listener - ${listenerName}][${logId}] Message translation failed. Sending to FTP.`);
     sendToSourceFTP(ftpClient, logId, FAILURE, incomingMsg, fileId);
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId,
             direction = direction, mtmsgType = UNKNOWN, mxMsgType = UNKNOWN, currency = NOT_AVAILABLE,
@@ -58,7 +58,7 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
     string incomingMsg, string fileId, string direction, string mtmsgType = NOT_AVAILABLE, 
     string mxMsgType = NOT_AVAILABLE) {
 
-    log:printInfo(string `[Listner - ${listenerName}][${logId}] Message type is not supported. 
+    log:printInfo(string `[Listener - ${listenerName}][${logId}] Message type is not supported.
         Skipping message translation.`);
     sendToSourceFTP(sourceClient, logId, SKIP, incomingMsg, fileId);
     sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId, "");
@@ -88,7 +88,7 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
         string incomingMsg, string|xml translatedMsg, string fileId, string direction, string mtmsgType, string mxMsgType, 
         string currency = NOT_AVAILABLE, string amount = NOT_AVAILABLE, string fileType = "txt") {
 
-    log:printInfo(string `[Listner - ${listenerName}][${logId}] Message translated successfully. Sending to FTP.`);
+    log:printInfo(string `[Listener - ${listenerName}][${logId}] Message translated successfully. Sending to FTP.`);
     sendToSourceFTP(sourceClient, logId, SUCCESS, incomingMsg, fileId);
     sendToDestinationFTP(destinationClient, logId, translatedMsg, fileId, fileType);
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg.toBalString(), msgId = fileId,
@@ -120,7 +120,7 @@ function appendToDashboardLogs(string listenerName, string orgnlMessage, string 
     time:Civil civilTime = time:utcToCivil(currentTime);
     string|error timestamp = time:civilToString(civilTime);
     if timestamp is error {
-        log:printError(string `[Listner - ${listenerName}][${msgId}] Error while generating timestamp. 
+        log:printError(string `[Listener - ${listenerName}][${msgId}] Error while generating timestamp.
             Setting default value.`, err = timestamp.toBalString());
         timestamp = "0000-00-00T00:00:00Z";
     }
@@ -167,7 +167,7 @@ function appendToDashboardLogs(string listenerName, string orgnlMessage, string 
 # + logId - log id
 # + e - error encountered during logging
 function handleLogFailure(string listenerName, string logId, error e) {
-    log:printError(string `[Listner - ${listenerName}][${logId}] Error while logging to dashboard.`, 
+    log:printError(string `[Listener - ${listenerName}][${logId}] Error while logging to dashboard.`,
         err = e.toBalString());
 }
 
@@ -335,10 +335,10 @@ function getMxMessageType(xml xmlContent) returns string|error {
 function cleanTempFile(string fileName, string logId, string listenerName) {
     error? fileDelete = file:remove(string `/tmp/swiftTranslator/${fileName}`);
     if fileDelete is error {
-        log:printError(string `[Listner - ${listenerName}][${logId}] Error while deleting temporary file`,
+        log:printError(string `[Listener - ${listenerName}][${logId}] Error while deleting temporary file`,
                 err = fileDelete.toBalString());
     } else {
-        log:printDebug(string `[Listner - ${listenerName}][${logId}] Temporary file deleted successfully.`);
+        log:printDebug(string `[Listener - ${listenerName}][${logId}] Temporary file deleted successfully.`);
     }
 }
 
