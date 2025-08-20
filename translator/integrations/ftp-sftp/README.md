@@ -16,7 +16,7 @@ File-based integration for SWIFT MT ↔ MX message translation using FTP/SFTP pr
 
 **🚀 Production Ready? Use the latest release:**
 
-[![Download FTP/SFTP Release](https://img.shields.io/badge/Download%20FTP%2FSFTP%20Release-v1.0.0-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases?q=SWIFT+MT%2FMX+Translator+1.0.0)
+[![Download FTP/SFTP Release](https://img.shields.io/badge/Download%20FTP%2FSFTP%20Release-v1.0.1-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases?q=SWIFT+MT%2FMX+Translator+1.0.1)
 
 **💡 Only need Java 17+ and FTP/SFTP server access!**
 
@@ -52,7 +52,7 @@ File-based integration for SWIFT MT ↔ MX message translation using FTP/SFTP pr
 1. **Download and extract the release**
    ```bash
    # Download latest release
-   wget https://github.com/wso2/reference-implementation-cbpr/releases/latest/download/swift-mt-mx-translator-1.0.0.tar.gz
+   wget https://github.com/wso2/reference-implementation-cbpr/releases/latest/download/swift-mt-mx-translator-1.0.1.tar.gz
    
    # Extract
    tar -xzf swift-mt-mx-translator-*.tar.gz
@@ -331,7 +331,7 @@ swiftMtMxTranslator/
 - **Post-processing**: Modify messages after translation
 
 ### Extension API Contract
-The extension APIs follow a standardized contract defined in `resources/translator-extensions-v1.0.0.yaml`:
+The extension APIs follow a standardized contract defined in `resources/translator-extensions-v1.0.1.yaml`:
 
 ```yaml
 # Common extension endpoints (available for all integrations)
