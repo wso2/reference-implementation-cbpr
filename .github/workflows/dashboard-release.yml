@@ -301,47 +301,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Update README Files with New Version
-        if: ${{ !contains(needs.build-dashboard.outputs.version, '-') }}
-        run: |
-          echo "Updating README files with dashboard version ${{ needs.build-dashboard.outputs.version }}"
-          
-          # Update main README.md
-          if [[ -f "README.md" ]]; then
-            # Update dashboard download badge
-            sed -i 's|Download%20Dashboard-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Dashboard-v${{ needs.build-dashboard.outputs.version }}|g' README.md
-            sed -i 's|Dashboard+Plugin+[0-9]*\.[0-9]*\.[0-9]*|Dashboard+Plugin+${{ needs.build-dashboard.outputs.version }}|g' README.md
-            echo "✅ Updated main README.md dashboard version"
-          fi
-          
-          # Update dashboard README.md
-          if [[ -f "dashboard/README.md" ]]; then
-            # Update dashboard download badge
-            sed -i 's|Download%20Dashboard%20Plugin-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Dashboard%20Plugin-v${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
-            sed -i 's|Dashboard+Plugin+[0-9]*\.[0-9]*\.[0-9]*|Dashboard+Plugin+${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
-            echo "✅ Updated dashboard/README.md version"
-          fi
-          
-          # Commit the README updates
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          # Check if there are any changes
-          if ! git diff --quiet README.md dashboard/README.md 2>/dev/null; then
-            git add README.md dashboard/README.md
-            git commit -m "docs: update README badges to dashboard version ${{ needs.build-dashboard.outputs.version }}
-
-            - Updated download badges in README files
-            - Version: ${{ needs.build-dashboard.outputs.version }}
-            - Release: ${{ needs.build-dashboard.outputs.tag }}
-            
-            [skip ci]"
-            git push origin main
-            echo "✅ README files updated and committed"
-          else
-            echo "ℹ️ No changes to commit in README files"
-          fi
-          
       - name: Update Latest Release Info
         if: ${{ !contains(needs.build-dashboard.outputs.version, '-') }}
         run: |
@@ -427,7 +386,7 @@ jobs:
             git checkout -b "${BRANCH_NAME}"
           fi
           
-      - name: Update Package.json Version
+      - name: Update Package.json Version and README Files
         run: |
           cd ${{ env.DASHBOARD_PATH }}
           
@@ -441,16 +400,40 @@ jobs:
           
           echo "Updated plugin version to ${{ steps.next_version.outputs.next_version }}"
           
+          # Update README files with the new dashboard version
+          cd $GITHUB_WORKSPACE
+          
+          echo "Updating README files with dashboard version ${{ needs.build-dashboard.outputs.version }}"
+          
+          # Update main README.md
+          if [[ -f "README.md" ]]; then
+            # Update dashboard download badge
+            sed -i 's|Download%20Dashboard-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Dashboard-v${{ needs.build-dashboard.outputs.version }}|g' README.md
+            sed -i 's|Dashboard+Plugin+[0-9]*\.[0-9]*\.[0-9]*|Dashboard+Plugin+${{ needs.build-dashboard.outputs.version }}|g' README.md
+            echo "✅ Updated main README.md dashboard version"
+          fi
+          
+          # Update dashboard README.md
+          if [[ -f "dashboard/README.md" ]]; then
+            # Update dashboard download badge
+            sed -i 's|Download%20Dashboard%20Plugin-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Dashboard%20Plugin-v${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
+            sed -i 's|Dashboard+Plugin+[0-9]*\.[0-9]*\.[0-9]*|Dashboard+Plugin+${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
+            echo "✅ Updated dashboard/README.md version"
+          fi
+          
           # Verify the changes
           echo "Updated opensearch_dashboards.json:"
-          grep -E '"version"|"opensearchDashboardsVersion"' opensearch_dashboards.json
-          [[ -f "package.json" ]] && echo "Updated package.json:" && grep -A5 -B5 '"version"' package.json || true
+          grep -E '"version"|"opensearchDashboardsVersion"' ${{ env.DASHBOARD_PATH }}/opensearch_dashboards.json
+          [[ -f "${{ env.DASHBOARD_PATH }}/package.json" ]] && echo "Updated package.json:" && grep -A5 -B5 '"version"' ${{ env.DASHBOARD_PATH }}/package.json || true
           
       - name: Commit and Push Version Bump
         run: |
           # Add plugin configuration files
           git add ${{ env.DASHBOARD_PATH }}/opensearch_dashboards.json
           [[ -f "${{ env.DASHBOARD_PATH }}/package.json" ]] && git add ${{ env.DASHBOARD_PATH }}/package.json || true
+          
+          # Add README files
+          git add README.md dashboard/README.md
           
           # Check for yarn.lock changes and add if updated
           if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
@@ -476,7 +459,8 @@ jobs:
           - Automatic version bump after successful dashboard release ${{ needs.build-dashboard.outputs.version }}
           - Prepares for next development cycle
           - Previous release: ${{ needs.build-dashboard.outputs.tag }}
-          - Updated opensearch_dashboards.json and package.json versions"
+          - Updated opensearch_dashboards.json and package.json versions
+          - Updated README files with released dashboard version ${{ needs.build-dashboard.outputs.version }}"
           
           if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
             COMMIT_MSG="$COMMIT_MSG
@@ -521,10 +505,11 @@ jobs:
 
           **Changes:**
           - Updated \`dashboard/swift_dashboard/opensearch_dashboards.json\` version
-          - Updated \`dashboard/swift_dashboard/package.json\` version${YARN_LOCK_INFO}
+          - Updated \`dashboard/swift_dashboard/package.json\` version
+          - Updated README badges with released dashboard version ${{ needs.build-dashboard.outputs.version }}${YARN_LOCK_INFO}
           - Prepares repository for next development cycle
 
-          **Auto-merge:** This PR can be safely merged as it only contains version updates and dependency locks.
+          **Auto-merge:** This PR can be safely merged as it only contains version updates and documentation badges.
 
           ---
           🤖 *This PR was automatically created by the [dashboard release workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*"

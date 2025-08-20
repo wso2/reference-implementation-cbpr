@@ -243,55 +243,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Update README Files with New Version
-        if: ${{ !contains(needs.build.outputs.version, '-') }}
-        run: |
-          echo "Updating README files with translator version ${{ needs.build.outputs.version }}"
-          
-          # Update main README.md
-          if [[ -f "README.md" ]]; then
-            # Update translator download badge
-            sed -i 's|Download%20Translator-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Translator-v${{ needs.build.outputs.version }}|g' README.md
-            sed -i 's|SWIFT+MT%2FMX+Translator+[0-9]*\.[0-9]*\.[0-9]*|SWIFT+MT%2FMX+Translator+${{ needs.build.outputs.version }}|g' README.md
-            # Update download links
-            sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' README.md
-            # Update translator extensions references
-            sed -i 's|translator-extensions-v[0-9]*\.[0-9]*\.[0-9]*|translator-extensions-v${{ needs.build.outputs.version }}|g' README.md
-            echo "✅ Updated main README.md translator version"
-          fi
-          
-          # Update FTP/SFTP README.md
-          if [[ -f "translator/integrations/ftp-sftp/README.md" ]]; then
-            # Update FTP/SFTP download badge
-            sed -i 's|Download%20FTP%2FSFTP%20Release-v[0-9]*\.[0-9]*\.[0-9]*|Download%20FTP%2FSFTP%20Release-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
-            sed -i 's|SWIFT+MT%2FMX+Translator+[0-9]*\.[0-9]*\.[0-9]*|SWIFT+MT%2FMX+Translator+${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
-            # Update download links
-            sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
-            # Update translator extensions references
-            sed -i 's|translator-extensions-v[0-9]*\.[0-9]*\.[0-9]*|translator-extensions-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
-            echo "✅ Updated FTP/SFTP README.md version"
-          fi
-          
-          # Commit the README updates
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          # Check if there are any changes
-          if ! git diff --quiet README.md translator/integrations/ftp-sftp/README.md 2>/dev/null; then
-            git add README.md translator/integrations/ftp-sftp/README.md
-            git commit -m "docs: update README badges to translator version ${{ needs.build.outputs.version }}
-
-            - Updated download badges in README files
-            - Version: ${{ needs.build.outputs.version }}
-            - Release: ${{ needs.build.outputs.tag }}
-            
-            [skip ci]"
-            git push origin main
-            echo "✅ README files updated and committed"
-          else
-            echo "ℹ️ No changes to commit in README files"
-          fi
-          
       - name: Update Latest Release Info
         if: ${{ !contains(needs.build.outputs.version, '-') }}
         run: |
@@ -358,7 +309,7 @@ jobs:
             git checkout -b "${BRANCH_NAME}"
           fi
           
-      - name: Update Ballerina.toml Version
+      - name: Update Ballerina.toml Version and README Files
         run: |
           cd ${{ env.PROJECT_PATH }}
           
@@ -367,12 +318,44 @@ jobs:
           
           echo "Updated Ballerina.toml version to ${{ steps.next_version.outputs.next_version }}"
           
+          # Update README files with the released translator version
+          cd $GITHUB_WORKSPACE
+          
+          echo "Updating README files with translator version ${{ needs.build.outputs.version }}"
+          
+          # Update main README.md
+          if [[ -f "README.md" ]]; then
+            # Update translator download badge
+            sed -i 's|Download%20Translator-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Translator-v${{ needs.build.outputs.version }}|g' README.md
+            sed -i 's|SWIFT+MT%2FMX+Translator+[0-9]*\.[0-9]*\.[0-9]*|SWIFT+MT%2FMX+Translator+${{ needs.build.outputs.version }}|g' README.md
+            # Update download links
+            sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' README.md
+            # Update translator extensions references
+            sed -i 's|translator-extensions-v[0-9]*\.[0-9]*\.[0-9]*|translator-extensions-v${{ needs.build.outputs.version }}|g' README.md
+            echo "✅ Updated main README.md translator version"
+          fi
+          
+          # Update FTP/SFTP README.md
+          if [[ -f "translator/integrations/ftp-sftp/README.md" ]]; then
+            # Update FTP/SFTP download badge
+            sed -i 's|Download%20FTP%2FSFTP%20Release-v[0-9]*\.[0-9]*\.[0-9]*|Download%20FTP%2FSFTP%20Release-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
+            sed -i 's|SWIFT+MT%2FMX+Translator+[0-9]*\.[0-9]*\.[0-9]*|SWIFT+MT%2FMX+Translator+${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
+            # Update download links
+            sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
+            # Update translator extensions references
+            sed -i 's|translator-extensions-v[0-9]*\.[0-9]*\.[0-9]*|translator-extensions-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
+            echo "✅ Updated FTP/SFTP README.md version"
+          fi
+          
           # Verify the change
-          grep "^version" Ballerina.toml
+          grep "^version" ${{ env.PROJECT_PATH }}/Ballerina.toml
           
       - name: Commit and Push Version Bump
         run: |
           git add ${{ env.PROJECT_PATH }}/Ballerina.toml
+          
+          # Add README files
+          git add README.md translator/integrations/ftp-sftp/README.md
           
           # Check if there are changes to commit
           if git diff --staged --quiet; then
@@ -385,6 +368,7 @@ jobs:
           - Automatic version bump after successful release ${{ needs.build.outputs.version }}
           - Prepares for next development cycle
           - Previous release: ${{ needs.build.outputs.tag }}
+          - Updated README files with released translator version ${{ needs.build.outputs.version }}
           
           This commit was automatically created by the release workflow."
           
@@ -413,9 +397,10 @@ jobs:
 
           **Changes:**
           - Updated \`translator/integrations/ftp-sftp/swiftMtMxTranslator/Ballerina.toml\` version
+          - Updated README badges with released translator version ${{ needs.build.outputs.version }}
           - Prepares repository for next development cycle
 
-          **Auto-merge:** This PR can be safely merged as it only contains version updates.
+          **Auto-merge:** This PR can be safely merged as it only contains version updates and documentation badges.
 
           ---
           🤖 *This PR was automatically created by the [translator release workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*"
