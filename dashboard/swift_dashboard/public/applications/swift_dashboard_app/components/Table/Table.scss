@@ -1,0 +1,170 @@
+// Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+.tableContainer {
+    width: 100%;
+    overflow-x: auto;
+    padding: 1rem 0 0 0; /* Add padding to ensure rounded corners are visible */
+}
+
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: #ffffff; /* Light background color to match the page */
+    border-radius: 0.5rem; /* 8px rounded corners */
+    overflow: hidden; /* Ensure content respects the rounded corners */
+    border: 0.4rem solid #ffffff;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1); /* Add shadow */
+}
+
+.table th, .table td {
+    padding: 0.9375rem; /* 15px */
+    text-align: center;
+    border-bottom: 0.0625rem solid #eaeaea; /* 1px */
+}
+
+.table thead {
+    background: linear-gradient(to left, #2078C2, #1A639F); /* Gradient background for the entire header row */
+}
+
+.table th {
+    color: #fff; /* White text color for headers */
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    border-bottom: 0.125rem solid #dee2e6; /* 2px */
+}
+
+.msgType {
+    font-size: 0.875rem;
+}
+
+.table tbody {
+    display: block;
+    max-height: 30rem; 
+    overflow-y: auto;
+}
+
+.table thead, .table tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.tableRow {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.875rem;
+}
+
+.table td:first-child, .table th:first-child {
+    padding-left: 1.25rem; /* 20px */
+}
+
+.table td:last-child, .table th:last-child {
+    padding-right: 1.25rem; /* 20px */
+}
+
+/* Zebra striping for better readability */
+.table tbody tr:nth-child(even) {
+    background: linear-gradient(to top, #eaeaea, #f5f5f5); /* Light gray for odd rows */
+}
+
+.table tbody tr:nth-child(even):hover {
+    background: linear-gradient(to left, #2078C2, #1A639F);
+    color: #fff;
+}
+
+.table tbody tr:nth-child(odd):hover {
+    background: linear-gradient(to left, #2078C2, #1A639F);
+    color: #fff;
+}
+
+/* Custom scrollbar styles */
+.table tbody::-webkit-scrollbar {
+    width: 0.5rem; /* Smaller width for the scrollbar */
+}
+
+.table tbody::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Background color of the scrollbar track */
+    border-radius: 0.25rem; /* Rounded edges for the scrollbar track */
+}
+
+.table tbody::-webkit-scrollbar-thumb {
+    background: #888; /* Color of the scrollbar thumb */
+    border-radius: 0.25rem; /* Rounded edges for the scrollbar thumb */
+}
+
+.table tbody::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Darker color when hovering over the scrollbar thumb */
+}
+
+/* Styles for filter inputs */
+.table thead input,
+.table thead select {
+    width: 100%;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    border: 0.0625rem solid #ccc; /* 1px */
+    border-radius: 0.25rem; /* 4px */
+    margin-top: 0.5rem; /* Add some space between the header text and the input */
+}
+
+/* Styles for min and max input fields */
+.amountFilter {
+    display: flex;
+    gap: 0.3rem; /* Add some space between the min and max inputs */
+}
+
+.amountFilter input {
+    width: 4rem; /* Set a fixed width for the min and max inputs */
+    padding: 0.25rem; /* Add some padding for better usability */
+}
+
+/* Add this to your Table.module.css */
+.dateRangeFilter {
+  display: flex;
+  flex-direction: column;
+}
+
+.dateRangeFilter input {
+  width: 50%;
+  border: 0.063rem solid #ddd;
+  border-radius: 0.5rem;
+  height: 0.1rem;
+  font-size: 0.7rem;
+  flex: content;
+}
+
+.dateRangeFilter input:focus {
+  outline: none;
+  border-color: #888;
+}
+
+/* Adjust the active filter style for date inputs */
+.dateRangeFilter input.activeFilter {
+  background-color: rgb(246, 246, 246);
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}

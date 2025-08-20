@@ -1,0 +1,513 @@
+name: Build and Release SWIFT Dashboard
+
+on:
+  push:
+    tags:
+      - 'dashboard-v*'  # Triggers on dashboard version tags like dashboard-v1.0.0
+    paths:
+      - 'dashboard/**'
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release'
+        required: false
+        default: false
+        type: boolean
+      release_tag:
+        description: 'Release tag (e.g., dashboard-v1.0.0)'
+        required: false
+        default: ''
+        type: string
+
+env:
+  NODE_VERSION: '20'
+  DASHBOARD_PATH: 'dashboard/swift_dashboard'
+
+jobs:
+  build-dashboard:
+    name: Build Dashboard Plugin
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      tag: ${{ steps.get_version.outputs.tag }}
+      yarn_lock_updated: ${{ steps.prepare_artifacts.outputs.yarn_lock_updated }}
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Clone OpenSearch Dashboards
+        run: |
+          echo "Cloning OpenSearch Dashboards repository..."
+          git clone https://github.com/opensearch-project/OpenSearch-Dashboards.git
+          cd OpenSearch-Dashboards
+          echo "Staying on main branch for compatibility"
+          
+      - name: Bootstrap OpenSearch Dashboards
+        run: |
+          cd OpenSearch-Dashboards
+          echo "Running yarn osd bootstrap..."
+          yarn osd bootstrap
+          
+      - name: Copy Dashboard Plugin to Plugins Directory
+        run: |
+          echo "Copying swift_dashboard to OpenSearch Dashboards plugins directory..."
+          cp -r ${{ env.DASHBOARD_PATH }} OpenSearch-Dashboards/plugins/swift_dashboard
+          
+      - name: Install Plugin Dependencies and Build
+        run: |
+          cd OpenSearch-Dashboards/plugins/swift_dashboard
+          echo "Installing plugin dependencies and updating lock file..."
+          
+          # Remove existing yarn.lock and node_modules to ensure clean install
+          rm -f yarn.lock
+          rm -rf node_modules
+          
+          # Install dependencies (this will generate a new yarn.lock)
+          yarn install
+          
+          # Copy updated yarn.lock back to source
+          cp yarn.lock $GITHUB_WORKSPACE/${{ env.DASHBOARD_PATH }}/yarn.lock
+          
+          echo "Building plugin..."
+          yarn build
+          
+          # Verify build output
+          echo "Checking build directory contents:"
+          ls -la build/ || echo "Build directory not found"
+          
+          # Check if any swiftDashboard zip file exists
+          if ls build/swiftDashboard-*.zip 1> /dev/null 2>&1; then
+            echo "✅ Dashboard plugin built successfully"
+            PLUGIN_ZIP=$(ls build/swiftDashboard-*.zip | head -1)
+            echo "Found plugin: $PLUGIN_ZIP"
+          else
+            echo "❌ Dashboard plugin build failed - no zip file found"
+            exit 1
+          fi
+        id: build_plugin
+        
+      - name: Get Version Info
+        id: get_version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            # Extract version from tag (remove dashboard-v prefix)
+            TAG=${GITHUB_REF#refs/tags/}
+            VERSION=${TAG#dashboard-v}
+          elif [[ "${{ github.event.inputs.release_tag }}" != "" ]]; then
+            # Use provided tag
+            TAG="${{ github.event.inputs.release_tag }}"
+            VERSION=${TAG#dashboard-v}
+          else
+            # Use version from opensearch_dashboards.json + commit hash
+            cd ${{ env.DASHBOARD_PATH }}
+            PACKAGE_VERSION=$(node -p "require('./opensearch_dashboards.json').version")
+            COMMIT_HASH=$(git rev-parse --short HEAD)
+            VERSION="${PACKAGE_VERSION}-${COMMIT_HASH}"
+            TAG="dashboard-v${VERSION}"
+          fi
+          
+          # Update plugin version but preserve OpenSearch Dashboards compatibility
+          cd ${{ env.DASHBOARD_PATH }}
+          
+          # Update opensearch_dashboards.json version only
+          sed -i '0,/"version": "[^"]*"/{s/"version": "[^"]*"/"version": "'$VERSION'"/}' opensearch_dashboards.json
+          
+          # Update package.json plugin version but preserve opensearchDashboards.version
+          if [[ -f "package.json" ]]; then
+            sed -i '0,/"version": "[^"]*"/{s/"version": "[^"]*"/"version": "'$VERSION'"/}' package.json
+          fi
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+          echo "Tag: ${TAG}"
+          
+          # Verify the updates
+          echo "Updated plugin configuration:"
+          grep -E '"version"|"opensearchDashboardsVersion"' opensearch_dashboards.json || true
+          [[ -f "package.json" ]] && grep '"version"' package.json || true
+          
+      - name: Prepare Release Artifacts
+        id: prepare_artifacts
+        run: |
+          # Copy the built plugin to release directory
+          mkdir -p release
+          cd OpenSearch-Dashboards/plugins/swift_dashboard/build
+          
+          # Find the built plugin zip
+          PLUGIN_ZIP=$(find . -name "swiftDashboard-*.zip" | head -1)
+          if [[ -n "$PLUGIN_ZIP" ]]; then
+            cp "$PLUGIN_ZIP" $GITHUB_WORKSPACE/release/swift-dashboard-${{ steps.get_version.outputs.version }}.zip
+            
+            # Generate checksums
+            cd $GITHUB_WORKSPACE/release
+            sha256sum swift-dashboard-${{ steps.get_version.outputs.version }}.zip > checksums.txt
+            
+            echo "Release artifacts prepared:"
+            ls -la
+          else
+            echo "❌ No plugin zip found in build directory"
+            exit 1
+          fi
+          
+          # Check if yarn.lock was updated during build and copy it back
+          cd $GITHUB_WORKSPACE
+          echo "Checking yarn.lock status..."
+          
+          # Always copy the yarn.lock back since we did a fresh install
+          cp OpenSearch-Dashboards/plugins/swift_dashboard/yarn.lock ${{ env.DASHBOARD_PATH }}/yarn.lock
+          echo "yarn.lock copied back to source directory"
+          
+          # Check if there are any changes compared to git
+          if git diff --quiet ${{ env.DASHBOARD_PATH }}/yarn.lock; then
+            echo "yarn.lock unchanged from git version"
+            echo "yarn_lock_updated=false" >> $GITHUB_OUTPUT
+            echo "YARN_LOCK_UPDATED=false" >> $GITHUB_ENV
+          else
+            echo "yarn.lock was updated during build process"
+            echo "yarn_lock_updated=true" >> $GITHUB_OUTPUT
+            echo "YARN_LOCK_UPDATED=true" >> $GITHUB_ENV
+          fi
+
+      - name: Upload Dashboard Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-dashboard-plugin-${{ steps.get_version.outputs.version }}
+          path: |
+            release/swift-dashboard-${{ steps.get_version.outputs.version }}.zip
+            release/checksums.txt
+          retention-days: 30
+
+      - name: Upload yarn.lock if updated
+        if: steps.prepare_artifacts.outputs.yarn_lock_updated == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: updated-yarn-lock-${{ steps.get_version.outputs.version }}
+          path: ${{ env.DASHBOARD_PATH }}/yarn.lock
+          retention-days: 30
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-dashboard
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: swift-dashboard-plugin-${{ needs.build-dashboard.outputs.version }}
+          path: release/
+          
+      - name: Extract for Scanning
+        run: |
+          cd release
+          echo "Available files for scanning:"
+          ls -la
+          
+          # Create a temporary directory for the plugin contents
+          mkdir -p plugin-scan
+          cd plugin-scan
+          
+          # Extract the zip file for scanning
+          unzip -q ../swift-dashboard-${{ needs.build-dashboard.outputs.version }}.zip
+          
+          echo "Extracted files for security scanning:"
+          find . -type f | head -20
+          
+      - name: Run Trivy Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'release/plugin-scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy Scan Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-dashboard, security-scan]
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Download Dashboard Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: swift-dashboard-plugin-${{ needs.build-dashboard.outputs.version }}
+          path: release/
+          
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          # Create release notes
+          cat > release_notes.md << 'EOF'
+          ## SWIFT Dashboard Plugin Release ${{ needs.build-dashboard.outputs.version }}
+          
+          ### 📚 Documentation & Support
+          
+          - **📖 Setup Guide**: [Dashboard Documentation](https://github.com/${{ github.repository }}/blob/main/dashboard/README.md)
+          - **🔧 Translator Integration**: [FTP/SFTP Guide](https://github.com/${{ github.repository }}/blob/main/translator/integrations/ftp-sftp/README.md)
+          - **🐛 Issues**: [GitHub Issues](https://github.com/${{ github.repository }}/issues)
+          - **💬 Support**: [GitHub Discussions](https://github.com/${{ github.repository }}/discussions)
+          
+          ### 💾 Download Assets
+          
+          | File | Description |
+          |------|-------------|
+          | `swift-dashboard-${{ needs.build-dashboard.outputs.version }}.zip` | Dashboard plugin package for OpenSearch Dashboards |
+          | `checksums.txt` | SHA256 checksums for verification |
+          
+          ---
+          **Build Information**
+          - **Version**: ${{ needs.build-dashboard.outputs.version }}
+          - **Build Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - **Commit**: [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          - **Workflow**: [Build #${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - **OpenSearch Compatibility**: 2.19.0+
+          EOF
+          
+          echo "release_notes_file=release_notes.md" >> $GITHUB_OUTPUT
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build-dashboard.outputs.tag }}
+          name: "SWIFT Dashboard Plugin ${{ needs.build-dashboard.outputs.version }}"
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(needs.build-dashboard.outputs.version, '-') }}
+          files: |
+            release/swift-dashboard-${{ needs.build-dashboard.outputs.version }}.zip
+            release/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Update Latest Release Info
+        if: ${{ !contains(needs.build-dashboard.outputs.version, '-') }}
+        run: |
+          echo "✅ Released dashboard version ${{ needs.build-dashboard.outputs.version }} as latest"
+          echo "📁 Dashboard artifacts uploaded successfully"
+          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build-dashboard.outputs.tag }}"
+
+  version-bump:
+    name: Bump Version After Release
+    runs-on: ubuntu-latest
+    needs: [build-dashboard, release]
+    if: needs.release.result == 'success' && !contains(needs.build-dashboard.outputs.version, '-')
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Download updated yarn.lock if available
+        if: needs.build-dashboard.outputs.yarn_lock_updated == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: updated-yarn-lock-${{ needs.build-dashboard.outputs.version }}
+          path: downloaded-yarn-lock/
+        continue-on-error: true
+
+      - name: Copy updated yarn.lock to workspace
+        if: needs.build-dashboard.outputs.yarn_lock_updated == 'true'
+        run: |
+          if [[ -f "downloaded-yarn-lock/yarn.lock" ]]; then
+            echo "Copying updated yarn.lock to workspace"
+            cp downloaded-yarn-lock/yarn.lock ${{ env.DASHBOARD_PATH }}/yarn.lock
+            echo "yarn.lock copied successfully"
+          else
+            echo "Warning: Updated yarn.lock not found in artifacts"
+          fi
+          
+      - name: Calculate Next Version
+        id: next_version
+        run: |
+          CURRENT_VERSION="${{ needs.build-dashboard.outputs.version }}"
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Parse semantic version (MAJOR.MINOR.PATCH)
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # Increment patch version for next development cycle
+          NEXT_PATCH=$((PATCH + 1))
+          NEXT_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          
+          echo "Next version: $NEXT_VERSION"
+          echo "next_version=${NEXT_VERSION}" >> $GITHUB_OUTPUT
+          
+      - name: Create Version Bump Branch
+        id: create_branch
+        run: |
+          BRANCH_NAME="chore/bump-dashboard-version-${{ steps.next_version.outputs.next_version }}"
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          
+          # Fetch latest changes to avoid conflicts
+          git fetch origin main
+          git checkout main
+          git pull origin main
+          
+          # Create and switch to new branch from latest main
+          git checkout -b "${BRANCH_NAME}"
+          echo "Created branch: ${BRANCH_NAME}"
+          
+      - name: Update Package.json Version
+        run: |
+          cd ${{ env.DASHBOARD_PATH }}
+          
+          # Update version in opensearch_dashboards.json (only first occurrence - the plugin version)
+          sed -i '0,/"version": "[^"]*"/{s/"version": "[^"]*"/"version": "${{ steps.next_version.outputs.next_version }}"/}' opensearch_dashboards.json
+          
+          # Update version in package.json (only first occurrence - the plugin version) 
+          if [[ -f "package.json" ]]; then
+            sed -i '0,/"version": "[^"]*"/{s/"version": "[^"]*"/"version": "${{ steps.next_version.outputs.next_version }}"/}' package.json
+          fi
+          
+          echo "Updated plugin version to ${{ steps.next_version.outputs.next_version }}"
+          
+          # Verify the changes
+          echo "Updated opensearch_dashboards.json:"
+          grep -E '"version"|"opensearchDashboardsVersion"' opensearch_dashboards.json
+          [[ -f "package.json" ]] && echo "Updated package.json:" && grep -A5 -B5 '"version"' package.json || true
+          
+      - name: Commit and Push Version Bump
+        run: |
+          # Add plugin configuration files
+          git add ${{ env.DASHBOARD_PATH }}/opensearch_dashboards.json
+          [[ -f "${{ env.DASHBOARD_PATH }}/package.json" ]] && git add ${{ env.DASHBOARD_PATH }}/package.json || true
+          
+          # Check for yarn.lock changes and add if updated
+          if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
+            echo "Adding updated yarn.lock to commit"
+            git add ${{ env.DASHBOARD_PATH }}/yarn.lock
+          else
+            echo "yarn.lock not updated, skipping"
+          fi
+          
+          # Show what will be committed
+          echo "Files to be committed:"
+          git diff --name-only --staged
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          # Create commit message
+          COMMIT_MSG="chore: bump dashboard version to ${{ steps.next_version.outputs.next_version }}
+
+          - Automatic version bump after successful dashboard release ${{ needs.build-dashboard.outputs.version }}
+          - Prepares for next development cycle
+          - Previous release: ${{ needs.build-dashboard.outputs.tag }}
+          - Updated opensearch_dashboards.json and package.json versions"
+          
+          if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
+            COMMIT_MSG="$COMMIT_MSG
+          - Updated yarn.lock with resolved dependencies"
+          fi
+          
+          COMMIT_MSG="$COMMIT_MSG
+
+          This PR was automatically created by the release workflow."
+          
+          git commit -m "$COMMIT_MSG"
+          
+          # Force push to handle any conflicts (since this is a new branch)
+          git push origin "${{ steps.create_branch.outputs.branch_name }}" --force
+          
+          echo "✅ Dashboard version bump committed to branch ${{ steps.create_branch.outputs.branch_name }}"
+          
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Prepare PR body with yarn.lock info if applicable
+          YARN_LOCK_INFO=""
+          if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
+            YARN_LOCK_INFO="
+          - Updated \`yarn.lock\` with resolved dependencies from build process"
+          fi
+          
+          gh pr create \
+            --title "chore: bump dashboard version to ${{ steps.next_version.outputs.next_version }}" \
+            --body "## 🔄 Automatic Version Bump
+
+          This PR automatically bumps the dashboard version after successful release.
+
+          **Release Information:**
+          - Previous version: ${{ needs.build-dashboard.outputs.version }}
+          - New version: ${{ steps.next_version.outputs.next_version }}
+          - Release tag: ${{ needs.build-dashboard.outputs.tag }}
+          - Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build-dashboard.outputs.tag }}
+
+          **Changes:**
+          - Updated \`dashboard/swift_dashboard/opensearch_dashboards.json\` version
+          - Updated \`dashboard/swift_dashboard/package.json\` version${YARN_LOCK_INFO}
+          - Prepares repository for next development cycle
+
+          **Auto-merge:** This PR can be safely merged as it only contains version updates and dependency locks.
+
+          ---
+          🤖 *This PR was automatically created by the [dashboard release workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*" \
+            --head "${{ steps.create_branch.outputs.branch_name }}" \
+            --base "main" \
+            --label "automated"
+          
+          echo "✅ Pull request created for dashboard version bump"
+
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [build-dashboard, release, version-bump]
+    if: always() && needs.build-dashboard.result == 'success'
+    
+    steps:
+      - name: Notify Success
+        if: needs.release.result == 'success'
+        run: |
+          echo "🎉 Successfully released SWIFT Dashboard Plugin ${{ needs.build-dashboard.outputs.version }}"
+          echo "📦 Download: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build-dashboard.outputs.tag }}"
+          
+          if [[ "${{ needs.version-bump.result }}" == "success" ]]; then
+            echo "🔢 Version bump PR created for next development cycle"
+            echo "📝 Review and merge the version bump PR to complete the release process"
+          elif [[ "${{ needs.version-bump.result }}" == "skipped" ]]; then
+            echo "⏭️ Version bump skipped (pre-release or manual trigger)"
+          else
+            echo "⚠️ Version bump failed - may need manual intervention"
+          fi
+          
+      - name: Notify Build Only
+        if: needs.release.result == 'skipped'
+        run: |
+          echo "✅ Dashboard build completed successfully for version ${{ needs.build-dashboard.outputs.version }}"
+          echo "💡 To create a release, push a version tag (v1.0.0) or use workflow_dispatch with create_release=true"

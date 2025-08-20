@@ -1,0 +1,52 @@
+{
+  "name": "swift-dashboard",
+  "version": "1.0.0",
+  "description": "SWIFT Dashboard for OpenSearch",
+  "main": "target/public",
+  "scripts": {
+    "build": "yarn node ../../scripts/plugin_helpers build",
+    "plugin:build": "osd-plugin-helpers build",
+    "plugin:dev": "osd-plugin-helpers dev",
+    "test:server": "osd-plugin-helpers test:server",
+    "test:browser": "osd-plugin-helpers test:browser",
+    "lint": "osd-plugin-helpers lint"
+  },
+  "keywords": [
+    "opensearch",
+    "dashboard",
+    "plugin",
+    "swift"
+  ],
+  "dependencies": {
+    "@elastic/datemath": "^5.0.3",
+    "@elastic/eui": "^106.2.0",
+    "@opensearch-project/opensearch": "^3.4.0",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table-devtools": "^8.21.3",
+    "chart.js": "^4.4.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "react-chartjs-2": "^5.3.0",
+    "react-router-dom": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.13.13",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "@types/react-router-dom": "^5.1.7",
+    "concurrently": "^8.2.2",
+    "mini-css-extract-plugin": "^2.7.6",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "opensearchDashboards": {
+    "version": "2.19.0",
+    "templateVersion": "1.0.0",
+    "node-version": "20.12.2",
+    "npm-version": "9.8.1"
+  }
+}

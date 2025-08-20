@@ -1,0 +1,131 @@
+// Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+@import "./commonStyles.scss";
+
+.message-counts {
+    width: 100%; 
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 0 1rem;  
+    padding: 0.3rem;
+  }
+  
+  /* Total count item styling */
+  .count-item.total {
+    background-color: $btn-color;
+    margin-bottom: 0.75rem;
+    margin-left: 3.6rem;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 50%;
+  }
+  
+  .count-item.total.Inward {
+    background-color: $inward-color;
+  }
+  
+  .count-item.total.Outward {
+    background-color: $outward-color;
+  }
+  
+  .count-item.total .count-header {
+    margin-bottom: 0.3rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .count-name.total {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  
+  .count-value.total {
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-align: center;
+    margin: 0;
+  }
+  
+  /* Row styling */
+  .counts-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Individual count items in rows */
+  .counts-row .count-item {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Direction-specific items */
+  .count-item.inward {
+    background-color: $inward-color;
+  }
+  
+  .count-item.outward {
+    background-color: $outward-color;
+  }
+  
+  /* Status-specific items */
+  .count-item.success {
+    background-color: $success-color;
+  }
+  
+  .count-item.fail {
+    background-color: $failure-color;
+  }
+  
+  /* Header within count items */
+  .count-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.3rem;
+    width: 100%;
+  }
+  
+  
+  /* Text elements */
+  .count-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fcfcfc;
+  }
+  
+  .count-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+    color: #fcfcfc;
+  }
+  
+  .count-percentage {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.85);
+  }

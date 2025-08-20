@@ -1,0 +1,396 @@
+name: Build and Release SWIFT MT/MX Translator
+
+on:
+  push:
+    tags:
+      - 'translator-v*'  # Triggers on translator version tags like translator-v1.0.0
+    paths:
+      - 'translator/integrations/ftp-sftp/**'
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release'
+        required: false
+        default: false
+        type: boolean
+      release_tag:
+        description: 'Release tag (e.g., translator-v1.0.0)'
+        required: false
+        default: ''
+        type: string
+
+env:
+  BALLERINA_VERSION: "2201.10.5"
+  PROJECT_PATH: "translator/integrations/ftp-sftp/swiftMtMxTranslator"
+
+jobs:
+  build:
+    name: Build Translator
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      tag: ${{ steps.get_version.outputs.tag }}
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Setup Ballerina
+        uses: ballerina-platform/setup-ballerina@v1.1.0
+        with:
+          version: ${{ env.BALLERINA_VERSION }}
+          
+      - name: Get Version Info
+        id: get_version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            # Extract version from tag (remove translator-v prefix)
+            TAG=${GITHUB_REF#refs/tags/}
+            VERSION=${TAG#translator-v}
+          elif [[ "${{ github.event.inputs.release_tag }}" != "" ]]; then
+            # Use provided tag
+            TAG="${{ github.event.inputs.release_tag }}"
+            VERSION=${TAG#translator-v}
+          else
+            # Use version from Ballerina.toml + commit hash
+            TOML_VERSION=$(grep '^version = ' ${{ env.PROJECT_PATH }}/Ballerina.toml | cut -d'"' -f2)
+            COMMIT_HASH=$(git rev-parse --short HEAD)
+            VERSION="${TOML_VERSION}-${COMMIT_HASH}"
+            TAG="translator-v${VERSION}"
+          fi
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+          echo "Tag: ${TAG}"
+          
+      - name: Update Version in Ballerina.toml
+        run: |
+          cd ${{ env.PROJECT_PATH }}
+          sed -i 's/^version = .*/version = "${{ steps.get_version.outputs.version }}"/' Ballerina.toml
+          echo "Updated Ballerina.toml version to ${{ steps.get_version.outputs.version }}"
+          
+      - name: Build Ballerina Project
+        run: |
+          cd ${{ env.PROJECT_PATH }}
+          echo "Building Ballerina project..."
+          bal build
+          
+      - name: Verify Build Artifacts
+        run: |
+          cd ${{ env.PROJECT_PATH }}
+          echo "Build contents:"
+          ls -la target/bin/
+          echo "JAR file details:"
+          ls -la target/bin/*.jar
+          
+      - name: Create Release Package
+        run: |
+          # Ensure we're in the repository root
+          cd $GITHUB_WORKSPACE
+          
+          # Create release directory in repository root
+          mkdir -p release/swift-mt-mx-translator-${{ steps.get_version.outputs.version }}
+          RELEASE_DIR="release/swift-mt-mx-translator-${{ steps.get_version.outputs.version }}"
+          
+          # Copy JAR file from build location
+          cp ${{ env.PROJECT_PATH }}/target/bin/*.jar ${RELEASE_DIR}/
+          
+          # Copy configuration files
+          cp ${{ env.PROJECT_PATH }}/Config.toml ${RELEASE_DIR}/Config.sample.toml
+          
+          # Copy source files for reference
+          mkdir -p ${RELEASE_DIR}/src
+          cp ${{ env.PROJECT_PATH }}/*.bal ${RELEASE_DIR}/src/
+          
+          # Create README
+          cat > ${RELEASE_DIR}/README.md << 'EOF'
+          # SWIFT MT/MX Translator Release
+          
+          This release contains the SWIFT MT/MX translation service for FTP/SFTP integration.
+          
+          ### Installation
+          
+          1. **Prerequisites**: Java 17+
+          2. **Run**: `java -jar swiftMtMxTranslator.jar`
+          3. **Configure**: Edit `Config.toml` with your FTP/SFTP settings
+          
+          ## Configuration
+          
+          Copy `Config.sample.toml` to `Config.toml` and update the configurations accordingly.
+          
+          ## Support
+          
+          - Documentation: See repository README
+          - Issues: GitHub Issues
+          - Enterprise: Contact WSO2
+          EOF
+          
+          # Create archives in release directory
+          cd release
+          tar -czf swift-mt-mx-translator-${{ steps.get_version.outputs.version }}.tar.gz swift-mt-mx-translator-${{ steps.get_version.outputs.version }}/
+          zip -r swift-mt-mx-translator-${{ steps.get_version.outputs.version }}.zip swift-mt-mx-translator-${{ steps.get_version.outputs.version }}/
+          
+          echo "Release package created:"
+          ls -la swift-mt-mx-translator-${{ steps.get_version.outputs.version }}.*
+          echo "Working directory: $(pwd)"
+          echo "Archive files created:"
+          ls -la *.tar.gz *.zip
+          
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-translator-${{ steps.get_version.outputs.version }}
+          path: |
+            release/swift-mt-mx-translator-${{ steps.get_version.outputs.version }}.tar.gz
+            release/swift-mt-mx-translator-${{ steps.get_version.outputs.version }}.zip
+          retention-days: 30
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: swift-translator-${{ needs.build.outputs.version }}
+          path: release/
+          
+      - name: Extract for Scanning
+        run: |
+          cd release
+          tar -xzf swift-mt-mx-translator-${{ needs.build.outputs.version }}.tar.gz
+          
+      - name: Run Trivy Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'release/swift-mt-mx-translator-${{ needs.build.outputs.version }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy Scan Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build, security-scan]
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: swift-translator-${{ needs.build.outputs.version }}
+          path: release/
+          
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          # Create release notes
+          cat > release_notes.md << 'EOF'
+          ## SWIFT MT/MX Translator Release ${{ needs.build.outputs.version }}
+          
+          ### 🚀 Features
+          - Bidirectional SWIFT MT ↔ MX message translation
+          - FTP/SFTP integration for automated processing
+          - Real-time message monitoring and analytics
+          - Comprehensive error handling and logging
+          
+          ### 🔗 Links
+          - [Documentation](https://github.com/${{ github.repository }}/blob/main/README.md)
+          - [FTP/SFTP Integration Guide](https://github.com/${{ github.repository }}/blob/main/translator/integrations/ftp-sftp/README.md)
+          - [Dashboard Setup](https://github.com/${{ github.repository }}/blob/main/dashboard/README.md)
+          
+          ---
+          **Build Info:** Built from commit `${{ github.sha }}`
+          EOF
+          
+          echo "release_notes_file=release_notes.md" >> $GITHUB_OUTPUT
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
+          name: "SWIFT MT/MX Translator ${{ needs.build.outputs.version }}"
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(needs.build.outputs.version, '-') }}
+          files: |
+            release/swift-mt-mx-translator-${{ needs.build.outputs.version }}.tar.gz
+            release/swift-mt-mx-translator-${{ needs.build.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Update Latest Release Info
+        if: ${{ !contains(needs.build.outputs.version, '-') }}
+        run: |
+          echo "✅ Released version ${{ needs.build.outputs.version }} as latest"
+          echo "📁 Release artifacts uploaded successfully"
+          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build.outputs.tag }}"
+
+  version-bump:
+    name: Bump Version After Release
+    runs-on: ubuntu-latest
+    needs: [build, release]
+    if: needs.release.result == 'success' && !contains(needs.build.outputs.version, '-')
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+      - name: Calculate Next Version
+        id: next_version
+        run: |
+          CURRENT_VERSION="${{ needs.build.outputs.version }}"
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Parse semantic version (MAJOR.MINOR.PATCH)
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # Increment patch version for next development cycle
+          NEXT_PATCH=$((PATCH + 1))
+          NEXT_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          
+          echo "Next version: $NEXT_VERSION"
+          echo "next_version=${NEXT_VERSION}" >> $GITHUB_OUTPUT
+          
+      - name: Create Version Bump Branch
+        id: create_branch
+        run: |
+          BRANCH_NAME="chore/bump-translator-version-${{ steps.next_version.outputs.next_version }}"
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          
+          # Fetch latest changes to avoid conflicts
+          git fetch origin main
+          git checkout main
+          git pull origin main
+          
+          # Create and switch to new branch from latest main
+          git checkout -b "${BRANCH_NAME}"
+          echo "Created branch: ${BRANCH_NAME}"
+          
+      - name: Update Ballerina.toml Version
+        run: |
+          cd ${{ env.PROJECT_PATH }}
+          
+          # Update version in Ballerina.toml
+          sed -i 's/^version = .*/version = "${{ steps.next_version.outputs.next_version }}"/' Ballerina.toml
+          
+          echo "Updated Ballerina.toml version to ${{ steps.next_version.outputs.next_version }}"
+          
+          # Verify the change
+          grep "^version" Ballerina.toml
+          
+      - name: Commit and Push Version Bump
+        run: |
+          git add ${{ env.PROJECT_PATH }}/Ballerina.toml
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          git commit -m "chore: bump translator version to ${{ steps.next_version.outputs.next_version }}
+
+          - Automatic version bump after successful release ${{ needs.build.outputs.version }}
+          - Prepares for next development cycle
+          - Previous release: ${{ needs.build.outputs.tag }}
+          
+          This PR was automatically created by the release workflow."
+          
+          # Force push to handle any conflicts (since this is a new branch)
+          git push origin "${{ steps.create_branch.outputs.branch_name }}" --force
+          
+          echo "✅ Version bump committed to branch ${{ steps.create_branch.outputs.branch_name }}"
+          
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "chore: bump translator version to ${{ steps.next_version.outputs.next_version }}" \
+            --body "## 🔄 Automatic Version Bump
+
+          This PR automatically bumps the translator version after successful release.
+
+          **Release Information:**
+          - Previous version: ${{ needs.build.outputs.version }}
+          - New version: ${{ steps.next_version.outputs.next_version }}
+          - Release tag: ${{ needs.build.outputs.tag }}
+          - Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build.outputs.tag }}
+
+          **Changes:**
+          - Updated \`translator/integrations/ftp-sftp/swiftMtMxTranslator/Ballerina.toml\` version
+          - Prepares repository for next development cycle
+
+          **Auto-merge:** This PR can be safely merged as it only contains version updates.
+
+          ---
+          🤖 *This PR was automatically created by the [translator release workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*" \
+            --head "${{ steps.create_branch.outputs.branch_name }}" \
+            --base "main" \
+            --label "automated"
+          
+          echo "✅ Pull request created for version bump"
+
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [build, release, version-bump]
+    if: always() && needs.build.result == 'success'
+    
+    steps:
+      - name: Notify Success
+        if: needs.release.result == 'success'
+        run: |
+          echo "🎉 Successfully released SWIFT MT/MX Translator ${{ needs.build.outputs.version }}"
+          echo "📦 Download: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build.outputs.tag }}"
+          
+          if [[ "${{ needs.version-bump.result }}" == "success" ]]; then
+            echo "🔢 Version bump PR created for next development cycle"
+            echo "📝 Review and merge the version bump PR to complete the release process"
+          elif [[ "${{ needs.version-bump.result }}" == "skipped" ]]; then
+            echo "⏭️ Version bump skipped (pre-release or manual trigger)"
+          else
+            echo "⚠️ Version bump failed - may need manual intervention"
+          fi
+          
+      - name: Notify Build Only
+        if: needs.release.result == 'skipped'
+        run: |
+          echo "✅ Build completed successfully for version ${{ needs.build.outputs.version }}"
+          echo "💡 To create a release, push a version tag or use workflow_dispatch with create_release=true"

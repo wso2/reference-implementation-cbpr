@@ -1,0 +1,208 @@
+openapi: 3.0.1
+info:
+  title: Service Contract for Swift MT MX Translator Extensions
+  description: This API defines the REST API contract for services that implements logic to extend the SWIFT MT MX translator
+  contact:
+    name: WSO2
+    url: https://wso2.com/solutions/financial-services/iso-20022/.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: v1.0.0
+servers:
+  - url: '{server}:{port}/'
+    variables:
+      server:
+        default: http://localhost
+      port:
+        default: '9090'
+tags:
+  - name: MTMX
+    description: APIs for MT->MX translation service extensions
+  - name: MXMT
+    description: APIs for MX->MT translation service extensions
+paths:
+  /mt-mx/pre-process:
+    post:
+      tags: 
+        - MTMX
+      summary: Pre processes the message for mt-mx translator.
+      operationId: postMtMxPreProcess
+      requestBody:
+        description: the incoming message to be pre-processed
+        content:
+          text/plain:
+            schema:
+              type: string
+            example: "{1:F01CBRLGB2LXXXX0000000000}{2:O9401000221020RBOSGBCHXXXX00000000002210201000N}{4:
+              :20:100-01
+              :25:48751258
+              :28C:1001/1
+              :60F:D221020GBP10,
+              :61:221020D10,NTRFcamt108bzmsgidr1
+              :62F:D221020GBP20,
+              -}"
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "{1:F01CBRLGB2LXXXX0000000000}{2:O9401000221020RBOSGBCHXXXX00000000002210201000N}{4:
+                :20:100-01
+                :25:48751258
+                :28C:1001/1
+                :60F:D221020GBP10,
+                :61:221020D10,NTRFcamt108bzmsgidr1
+                :62F:D221020GBP20,
+                -}"
+        '400':
+          description: BadRequest
+        '500':
+          description: InternalServerError
+  /mt-mx/post-process:
+    post:
+      tags: 
+        - MTMX
+      summary: Post processes the messages from the mt-mx translator.
+      operationId: postMtMxPostProcess
+      requestBody:
+        description: >-
+          the payload containing the translated message(ISO 200222 xml
+          formattted string) and original message(FIN message)
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostProcessPayload'
+            example:
+              originalMessage: "{1:F01CBRLGB2LXXXX0000000000}{2:O9401000221020RBOSGBCHXXXX00000000002210201000N}{4:
+                :20:100-01
+                :25:48751258
+                :28C:1001/1
+                :60F:D221020GBP10,
+                :61:221020D10,NTRFcamt108bzmsgidr1
+                :62F:D221020GBP20,
+                -}"
+              translatedMessage: "<Envelope><head:AppHdr>
+                <head:Fr><head:FIId></head:FIId></head:AppHdr><camt:Document>
+                <camt:BkToCstmrAcctRpt><camt:GrpHdr>
+                <camt:MsgId>100-01</camt:MsgId>
+                <camt:CreDtTm>2020-12-15T11:00:00+00:00</camt:CreDtTm>
+                </camt:GrpHdr></camt:BkToCstmrAcctRpt></Envelope>"
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            application/xml:
+              schema:
+                type: object
+        '400':
+          description: BadRequest
+        '500':
+          description: InternalServerError
+  /mx-mt/pre-process:
+    post:
+      tags: 
+        - MXMT
+      summary: Pre processes the message for mx-mt translator.
+      operationId: postMxMtPreProcess
+      requestBody:
+        description: the incoming message to be pre-processed
+        content:
+          text/plain:
+            schema:
+              type: string
+            example:
+              "<Envelope><head:AppHdr>
+                <head:Fr><head:FIId></head:FIId></head:AppHdr><camt:Document>
+                <camt:BkToCstmrAcctRpt><camt:GrpHdr>
+                <camt:MsgId>100-01</camt:MsgId>
+                <camt:CreDtTm>2020-12-15T11:00:00+00:00</camt:CreDtTm>
+                </camt:GrpHdr></camt:BkToCstmrAcctRpt></Envelope>"
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                type: string
+              example:
+                "<Envelope><head:AppHdr>
+                <head:Fr><head:FIId></head:FIId></head:AppHdr><camt:Document>
+                <camt:BkToCstmrAcctRpt><camt:GrpHdr>
+                <camt:MsgId>100-01</camt:MsgId>
+                <camt:CreDtTm>2020-12-15T11:00:00+00:00</camt:CreDtTm>
+                </camt:GrpHdr></camt:BkToCstmrAcctRpt></Envelope>"
+        '400':
+          description: BadRequest
+        '500':
+          description: InternalServerError
+  /mx-mt/post-process:
+    post:
+      tags: 
+        - MXMT
+      summary: Post processes the messages from the mx-mt translator.
+      operationId: postMxMtPostProcess
+      requestBody:
+        description: >-
+          the payload containing the translated message(FIN message) and
+          original message(ISO 200222 xml formattted string)
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostProcessPayload'
+            example:
+              originalMessage: "<Envelope><head:AppHdr>
+                <head:Fr><head:FIId></head:FIId></head:AppHdr><camt:Document>
+                <camt:BkToCstmrAcctRpt><camt:GrpHdr>
+                <camt:MsgId>100-01</camt:MsgId>
+                <camt:CreDtTm>2020-12-15T11:00:00+00:00</camt:CreDtTm>
+                </camt:GrpHdr></camt:BkToCstmrAcctRpt></Envelope>"
+              translatedMessage: "{1:F01CBRLGB2LXXXX0000000000}{2:O9401000221020RBOSGBCHXXXX00000000002210201000N}{4:
+                :20:100-01
+                :25:48751258
+                :28C:1001/1
+                :60F:D221020GBP10,
+                :61:221020D10,NTRFcamt108bzmsgidr1
+                :62F:D221020GBP20,
+                -}"
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            text/plain:
+              schema:
+                type: string
+              example:
+                "{1:F01CBRLGB2LXXXX0000000000}{2:O9401000221020RBOSGBCHXXXX00000000002210201000N}{4:
+                :20:100-01
+                :25:48751258
+                :28C:1001/1
+                :60F:D221020GBP10,
+                :61:221020D10,NTRFcamt108bzmsgidr1
+                :62F:D221020GBP20,
+                -}"
+        '400':
+          description: BadRequest
+        '500':
+          description: InternalServerError
+components:
+  schemas:
+    PostProcessPayload:
+      required:
+        - originalMessage
+        - translatedMessage
+      type: object
+      properties:
+        translatedMessage:
+          type: string
+        originalMessage:
+          type: string
+      description: >-
+        PostProcessPayload record is used to hold the payload for
+        post-processing messages.
