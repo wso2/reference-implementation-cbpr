@@ -265,4 +265,3 @@ export function getDayRange(): {
   export function isDateInRange(date: Date, startDate: Date, endDate: Date): boolean {
     return date >= startDate && date <= endDate;
   }
-  

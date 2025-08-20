@@ -25,6 +25,7 @@ import apiService from '../../../services';
 import {getDateRangeForPeriod, getMonthRange} from './utils/dateUtils';
 import Pagination from './Pagination';
 import './commonStyles.scss';
+
 // Define TableFilters interface (matches the structure in your Table component)
 export interface TableFilters {
     id: string;

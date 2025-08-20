@@ -14,6 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import {DashboardController} from './dashboardController';
+import { DashboardController } from './dashboardController';
 
 export { DashboardController };
