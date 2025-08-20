@@ -19,7 +19,6 @@ import ChartComponent from './ChartComponent';
 import SummaryComponent from './ErrorComponent';
 import MessageTypeDistribution from './MessageTypeDistribution';
 import RecentActivity from './RecentActivity';
-import useWindowSize from './hooks/useWindowSize';
 import ToggleBar from './ToggleBar';
 import './OverviewPage.scss';
 import './commonStyles.scss';
