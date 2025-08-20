@@ -330,8 +330,6 @@ jobs:
             sed -i 's|SWIFT+MT%2FMX+Translator+[0-9]*\.[0-9]*\.[0-9]*|SWIFT+MT%2FMX+Translator+${{ needs.build.outputs.version }}|g' README.md
             # Update download links
             sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' README.md
-            # Update translator extensions references
-            sed -i 's|translator-extensions-v[0-9]*\.[0-9]*\.[0-9]*|translator-extensions-v${{ needs.build.outputs.version }}|g' README.md
             echo "✅ Updated main README.md translator version"
           fi
           
@@ -342,8 +340,6 @@ jobs:
             sed -i 's|SWIFT+MT%2FMX+Translator+[0-9]*\.[0-9]*\.[0-9]*|SWIFT+MT%2FMX+Translator+${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
             # Update download links
             sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
-            # Update translator extensions references
-            sed -i 's|translator-extensions-v[0-9]*\.[0-9]*\.[0-9]*|translator-extensions-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
             echo "✅ Updated FTP/SFTP README.md version"
           fi
           

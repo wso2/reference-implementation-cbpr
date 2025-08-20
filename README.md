@@ -19,7 +19,7 @@ A comprehensive reference implementation for SWIFT MT ↔ MX message translation
 
 **🚀 Ready to use? Download the latest release:**
 
-[![Download Translator](https://img.shields.io/badge/Download%20Translator-v1.0.1-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases?q=SWIFT+MT%2FMX+Translator+1.0.1)
+[![Download Translator](https://img.shields.io/badge/Download%20Translator-v1.0.0-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases?q=SWIFT+MT%2FMX+Translator+1.0.0)
 
 [![Download Dashboard](https://img.shields.io/badge/Download%20Dashboard-v1.0.0-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases?q=Dashboard+Plugin+1.0.0)
 
@@ -96,7 +96,7 @@ Visit the [Releases Page](https://github.com/wso2/reference-implementation-cbpr/
 - 📋 View release notes and changelogs
 ```bash
 # Download latest release
-wget https://github.com/wso2/reference-implementation-cbpr/releases/latest/download/swift-mt-mx-translator-1.0.1.tar.gz
+wget https://github.com/wso2/reference-implementation-cbpr/releases/latest/download/swift-mt-mx-translator-1.0.0.tar.gz
 
 # Extract and install
 tar -xzf swift-mt-mx-translator-*.tar.gz
@@ -156,7 +156,7 @@ reference-implementation-cbpr/
 │       ├── server/                    # Backend API endpoints
 │       └── package.json               # Dependencies and build scripts
 ├── resources/                         # Shared resources
-│   └── translator-extensions-v1.0.1.yaml  # Extension API contract
+│   └── translator-extensions-v1.0.0.yaml  # Extension API contract
 └── translator/                        # Translation implementations
     └── integrations/                  # Integration-specific implementations
         └── ftp-sftp/                  # FTP/SFTP integration
