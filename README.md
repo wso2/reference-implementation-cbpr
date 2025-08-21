@@ -19,7 +19,7 @@ A comprehensive reference implementation for SWIFT MT ↔ MX message translation
 
 **🚀 Ready to use? Download the latest release:**
 
-[![Download Translator](https://img.shields.io/badge/Download%20Translator-v1.0.0-success?style=for-the-badge)](https://github.com/RivinduM/reference-implementation-cbpr/releases/tag/translator-v1.0.0)
+[![Download Translator](https://img.shields.io/badge/Download%20Translator-v1.0.0-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases/tag/translator-v1.0.0)
 
 [![Download Dashboard](https://img.shields.io/badge/Download%20Dashboard-v1.0.0-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases/tag/dashboard-v1.0.0)
 
@@ -189,7 +189,7 @@ All integrations support a common extension framework through RESTful APIs:
 - **Post-processing**: Modify messages after translation
 
 ### Extension API Contract
-The extension APIs follow a standardized contract defined in `resources/translator-extensions-v1.0.1.yaml`:
+The extension APIs follow a standardized contract defined in `resources/translator-extensions-v1.0.0.yaml`:
 
 ```yaml
 # Common extension endpoints (available for all integrations)
