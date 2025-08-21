@@ -287,10 +287,10 @@ jobs:
           echo "Next version: $NEXT_VERSION"
           echo "next_version=${NEXT_VERSION}" >> $GITHUB_OUTPUT
           
-      - name: Create Version Bump Branch
+      - name: Create or Update Version Bump Branch
         id: create_branch
         run: |
-          BRANCH_NAME="chore/bump-translator-version-${{ steps.next_version.outputs.next_version }}"
+          BRANCH_NAME="chore/translator-version-bump"
           echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
           
           # Fetch latest changes to avoid conflicts
@@ -298,11 +298,18 @@ jobs:
           git checkout main
           git pull origin main
           
-          # Create and switch to new branch from latest main
-          git checkout -b "${BRANCH_NAME}"
-          echo "Created branch: ${BRANCH_NAME}"
+          # Check if branch already exists
+          if git ls-remote --exit-code --heads origin "${BRANCH_NAME}"; then
+            echo "Branch ${BRANCH_NAME} already exists, updating it"
+            git fetch origin "${BRANCH_NAME}"
+            git checkout "${BRANCH_NAME}"
+            git reset --hard origin/main
+          else
+            echo "Creating new branch: ${BRANCH_NAME}"
+            git checkout -b "${BRANCH_NAME}"
+          fi
           
-      - name: Update Ballerina.toml Version
+      - name: Update Ballerina.toml Version and README Files
         run: |
           cd ${{ env.PROJECT_PATH }}
           
@@ -311,12 +318,40 @@ jobs:
           
           echo "Updated Ballerina.toml version to ${{ steps.next_version.outputs.next_version }}"
           
+          # Update README files with the released translator version
+          cd $GITHUB_WORKSPACE
+          
+          echo "Updating README files with translator version ${{ needs.build.outputs.version }}"
+          
+          # Update main README.md
+          if [[ -f "README.md" ]]; then
+            # Update translator download badge and URL
+            sed -i 's|Download%20Translator-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Translator-v${{ needs.build.outputs.version }}|g' README.md
+            sed -i 's|releases/tag/translator-v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/translator-v${{ needs.build.outputs.version }}|g' README.md
+            # Update download links
+            sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' README.md
+            echo "✅ Updated main README.md translator version"
+          fi
+          
+          # Update FTP/SFTP README.md
+          if [[ -f "translator/integrations/ftp-sftp/README.md" ]]; then
+            # Update FTP/SFTP download badge and URL
+            sed -i 's|Download%20FTP%2FSFTP%20Release-v[0-9]*\.[0-9]*\.[0-9]*|Download%20FTP%2FSFTP%20Release-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
+            sed -i 's|releases/tag/translator-v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/translator-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
+            # Update download links
+            sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
+            echo "✅ Updated FTP/SFTP README.md version"
+          fi
+          
           # Verify the change
-          grep "^version" Ballerina.toml
+          grep "^version" ${{ env.PROJECT_PATH }}/Ballerina.toml
           
       - name: Commit and Push Version Bump
         run: |
           git add ${{ env.PROJECT_PATH }}/Ballerina.toml
+          
+          # Add README files
+          git add README.md translator/integrations/ftp-sftp/README.md
           
           # Check if there are changes to commit
           if git diff --staged --quiet; then
@@ -329,21 +364,24 @@ jobs:
           - Automatic version bump after successful release ${{ needs.build.outputs.version }}
           - Prepares for next development cycle
           - Previous release: ${{ needs.build.outputs.tag }}
+          - Updated README files with released translator version ${{ needs.build.outputs.version }}
           
-          This PR was automatically created by the release workflow."
+          This commit was automatically created by the release workflow."
           
-          # Force push to handle any conflicts (since this is a new branch)
+          # Push to the branch (force push to handle any updates)
           git push origin "${{ steps.create_branch.outputs.branch_name }}" --force
           
           echo "✅ Version bump committed to branch ${{ steps.create_branch.outputs.branch_name }}"
           
-      - name: Create Pull Request
+      - name: Create or Update Pull Request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create \
-            --title "chore: bump translator version to ${{ steps.next_version.outputs.next_version }}" \
-            --body "## 🔄 Automatic Version Bump
+          # Check if PR already exists for this branch
+          EXISTING_PR=$(gh pr list --head "${{ steps.create_branch.outputs.branch_name }}" --base "main" --json number --jq '.[0].number' || echo "")
+          
+          PR_TITLE="chore: bump translator version to ${{ steps.next_version.outputs.next_version }}"
+          PR_BODY="## 🔄 Automatic Version Bump
 
           This PR automatically bumps the translator version after successful release.
 
@@ -355,17 +393,30 @@ jobs:
 
           **Changes:**
           - Updated \`translator/integrations/ftp-sftp/swiftMtMxTranslator/Ballerina.toml\` version
+          - Updated README badges with released translator version ${{ needs.build.outputs.version }}
           - Prepares repository for next development cycle
 
-          **Auto-merge:** This PR can be safely merged as it only contains version updates.
+          **Auto-merge:** This PR can be safely merged as it only contains version updates and documentation badges.
 
           ---
-          🤖 *This PR was automatically created by the [translator release workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*" \
-            --head "${{ steps.create_branch.outputs.branch_name }}" \
-            --base "main" \
-            --label "automated"
+          🤖 *This PR was automatically created by the [translator release workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*"
           
-          echo "✅ Pull request created for version bump"
+          if [[ -n "$EXISTING_PR" ]]; then
+            echo "Updating existing PR #$EXISTING_PR"
+            gh pr edit "$EXISTING_PR" \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
+            echo "✅ Pull request #$EXISTING_PR updated for translator version bump"
+          else
+            echo "Creating new PR"
+            gh pr create \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY" \
+              --head "${{ steps.create_branch.outputs.branch_name }}" \
+              --base "main" \
+              --label "automated"
+            echo "✅ New pull request created for translator version bump"
+          fi
 
   notify:
     name: Notify Release

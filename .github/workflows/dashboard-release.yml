@@ -364,10 +364,10 @@ jobs:
           echo "Next version: $NEXT_VERSION"
           echo "next_version=${NEXT_VERSION}" >> $GITHUB_OUTPUT
           
-      - name: Create Version Bump Branch
+      - name: Create or Update Version Bump Branch
         id: create_branch
         run: |
-          BRANCH_NAME="chore/bump-dashboard-version-${{ steps.next_version.outputs.next_version }}"
+          BRANCH_NAME="chore/dashboard-version-bump"
           echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
           
           # Fetch latest changes to avoid conflicts
@@ -375,11 +375,18 @@ jobs:
           git checkout main
           git pull origin main
           
-          # Create and switch to new branch from latest main
-          git checkout -b "${BRANCH_NAME}"
-          echo "Created branch: ${BRANCH_NAME}"
+          # Check if branch already exists
+          if git ls-remote --exit-code --heads origin "${BRANCH_NAME}"; then
+            echo "Branch ${BRANCH_NAME} already exists, updating it"
+            git fetch origin "${BRANCH_NAME}"
+            git checkout "${BRANCH_NAME}"
+            git reset --hard origin/main
+          else
+            echo "Creating new branch: ${BRANCH_NAME}"
+            git checkout -b "${BRANCH_NAME}"
+          fi
           
-      - name: Update Package.json Version
+      - name: Update Package.json Version and README Files
         run: |
           cd ${{ env.DASHBOARD_PATH }}
           
@@ -393,16 +400,40 @@ jobs:
           
           echo "Updated plugin version to ${{ steps.next_version.outputs.next_version }}"
           
+          # Update README files with the new dashboard version
+          cd $GITHUB_WORKSPACE
+          
+          echo "Updating README files with dashboard version ${{ needs.build-dashboard.outputs.version }}"
+          
+          # Update main README.md
+          if [[ -f "README.md" ]]; then
+            # Update dashboard download badge and URL
+            sed -i 's|Download%20Dashboard-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Dashboard-v${{ needs.build-dashboard.outputs.version }}|g' README.md
+            sed -i 's|releases/tag/dashboard-v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/dashboard-v${{ needs.build-dashboard.outputs.version }}|g' README.md
+            echo "✅ Updated main README.md dashboard version"
+          fi
+          
+          # Update dashboard README.md
+          if [[ -f "dashboard/README.md" ]]; then
+            # Update dashboard download badge and URL
+            sed -i 's|Download%20Dashboard%20Plugin-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Dashboard%20Plugin-v${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
+            sed -i 's|releases/tag/dashboard-v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/dashboard-v${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
+            echo "✅ Updated dashboard/README.md version"
+          fi
+          
           # Verify the changes
           echo "Updated opensearch_dashboards.json:"
-          grep -E '"version"|"opensearchDashboardsVersion"' opensearch_dashboards.json
-          [[ -f "package.json" ]] && echo "Updated package.json:" && grep -A5 -B5 '"version"' package.json || true
+          grep -E '"version"|"opensearchDashboardsVersion"' ${{ env.DASHBOARD_PATH }}/opensearch_dashboards.json
+          [[ -f "${{ env.DASHBOARD_PATH }}/package.json" ]] && echo "Updated package.json:" && grep -A5 -B5 '"version"' ${{ env.DASHBOARD_PATH }}/package.json || true
           
       - name: Commit and Push Version Bump
         run: |
           # Add plugin configuration files
           git add ${{ env.DASHBOARD_PATH }}/opensearch_dashboards.json
           [[ -f "${{ env.DASHBOARD_PATH }}/package.json" ]] && git add ${{ env.DASHBOARD_PATH }}/package.json || true
+          
+          # Add README files
+          git add README.md dashboard/README.md
           
           # Check for yarn.lock changes and add if updated
           if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
@@ -428,7 +459,8 @@ jobs:
           - Automatic version bump after successful dashboard release ${{ needs.build-dashboard.outputs.version }}
           - Prepares for next development cycle
           - Previous release: ${{ needs.build-dashboard.outputs.tag }}
-          - Updated opensearch_dashboards.json and package.json versions"
+          - Updated opensearch_dashboards.json and package.json versions
+          - Updated README files with released dashboard version ${{ needs.build-dashboard.outputs.version }}"
           
           if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
             COMMIT_MSG="$COMMIT_MSG
@@ -437,19 +469,22 @@ jobs:
           
           COMMIT_MSG="$COMMIT_MSG
 
-          This PR was automatically created by the release workflow."
+          This commit was automatically created by the release workflow."
           
           git commit -m "$COMMIT_MSG"
           
-          # Force push to handle any conflicts (since this is a new branch)
+          # Push to the branch (force push to handle any updates)
           git push origin "${{ steps.create_branch.outputs.branch_name }}" --force
           
           echo "✅ Dashboard version bump committed to branch ${{ steps.create_branch.outputs.branch_name }}"
           
-      - name: Create Pull Request
+      - name: Create or Update Pull Request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Check if PR already exists for this branch
+          EXISTING_PR=$(gh pr list --head "${{ steps.create_branch.outputs.branch_name }}" --base "main" --json number --jq '.[0].number' || echo "")
+          
           # Prepare PR body with yarn.lock info if applicable
           YARN_LOCK_INFO=""
           if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
@@ -457,9 +492,8 @@ jobs:
           - Updated \`yarn.lock\` with resolved dependencies from build process"
           fi
           
-          gh pr create \
-            --title "chore: bump dashboard version to ${{ steps.next_version.outputs.next_version }}" \
-            --body "## 🔄 Automatic Version Bump
+          PR_TITLE="chore: bump dashboard version to ${{ steps.next_version.outputs.next_version }}"
+          PR_BODY="## 🔄 Automatic Version Bump
 
           This PR automatically bumps the dashboard version after successful release.
 
@@ -471,18 +505,31 @@ jobs:
 
           **Changes:**
           - Updated \`dashboard/swift_dashboard/opensearch_dashboards.json\` version
-          - Updated \`dashboard/swift_dashboard/package.json\` version${YARN_LOCK_INFO}
+          - Updated \`dashboard/swift_dashboard/package.json\` version
+          - Updated README badges with released dashboard version ${{ needs.build-dashboard.outputs.version }}${YARN_LOCK_INFO}
           - Prepares repository for next development cycle
 
-          **Auto-merge:** This PR can be safely merged as it only contains version updates and dependency locks.
+          **Auto-merge:** This PR can be safely merged as it only contains version updates and documentation badges.
 
           ---
-          🤖 *This PR was automatically created by the [dashboard release workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*" \
-            --head "${{ steps.create_branch.outputs.branch_name }}" \
-            --base "main" \
-            --label "automated"
+          🤖 *This PR was automatically created by the [dashboard release workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*"
           
-          echo "✅ Pull request created for dashboard version bump"
+          if [[ -n "$EXISTING_PR" ]]; then
+            echo "Updating existing PR #$EXISTING_PR"
+            gh pr edit "$EXISTING_PR" \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
+            echo "✅ Pull request #$EXISTING_PR updated for dashboard version bump"
+          else
+            echo "Creating new PR"
+            gh pr create \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY" \
+              --head "${{ steps.create_branch.outputs.branch_name }}" \
+              --base "main" \
+              --label "automated"
+            echo "✅ New pull request created for dashboard version bump"
+          fi
 
   notify:
     name: Notify Release
