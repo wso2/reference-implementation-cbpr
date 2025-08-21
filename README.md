@@ -19,9 +19,9 @@ A comprehensive reference implementation for SWIFT MT ↔ MX message translation
 
 **🚀 Ready to use? Download the latest release:**
 
-[![Download Translator](https://img.shields.io/badge/Download%20Translator-v1.0.0-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases?q=SWIFT+MT%2FMX+Translator+1.0.0)
+[![Download Translator](https://img.shields.io/badge/Download%20Translator-v1.0.0-success?style=for-the-badge)](https://github.com/RivinduM/reference-implementation-cbpr/releases/tag/translator-v1.0.0)
 
-[![Download Dashboard](https://img.shields.io/badge/Download%20Dashboard-v1.0.0-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases?q=Dashboard+Plugin+1.0.0)
+[![Download Dashboard](https://img.shields.io/badge/Download%20Dashboard-v1.0.0-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases/tag/dashboard-v1.0.0)
 
 **💡 Just need Java 17+ to run!** No need to clone the repository or install development tools.
 

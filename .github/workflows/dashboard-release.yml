@@ -407,17 +407,17 @@ jobs:
           
           # Update main README.md
           if [[ -f "README.md" ]]; then
-            # Update dashboard download badge
+            # Update dashboard download badge and URL
             sed -i 's|Download%20Dashboard-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Dashboard-v${{ needs.build-dashboard.outputs.version }}|g' README.md
-            sed -i 's|Dashboard+Plugin+[0-9]*\.[0-9]*\.[0-9]*|Dashboard+Plugin+${{ needs.build-dashboard.outputs.version }}|g' README.md
+            sed -i 's|releases/tag/dashboard-v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/dashboard-v${{ needs.build-dashboard.outputs.version }}|g' README.md
             echo "✅ Updated main README.md dashboard version"
           fi
           
           # Update dashboard README.md
           if [[ -f "dashboard/README.md" ]]; then
-            # Update dashboard download badge
+            # Update dashboard download badge and URL
             sed -i 's|Download%20Dashboard%20Plugin-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Dashboard%20Plugin-v${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
-            sed -i 's|Dashboard+Plugin+[0-9]*\.[0-9]*\.[0-9]*|Dashboard+Plugin+${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
+            sed -i 's|releases/tag/dashboard-v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/dashboard-v${{ needs.build-dashboard.outputs.version }}|g' dashboard/README.md
             echo "✅ Updated dashboard/README.md version"
           fi
           

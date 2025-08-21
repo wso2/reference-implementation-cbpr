@@ -325,9 +325,9 @@ jobs:
           
           # Update main README.md
           if [[ -f "README.md" ]]; then
-            # Update translator download badge
+            # Update translator download badge and URL
             sed -i 's|Download%20Translator-v[0-9]*\.[0-9]*\.[0-9]*|Download%20Translator-v${{ needs.build.outputs.version }}|g' README.md
-            sed -i 's|SWIFT+MT%2FMX+Translator+[0-9]*\.[0-9]*\.[0-9]*|SWIFT+MT%2FMX+Translator+${{ needs.build.outputs.version }}|g' README.md
+            sed -i 's|releases/tag/translator-v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/translator-v${{ needs.build.outputs.version }}|g' README.md
             # Update download links
             sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' README.md
             echo "✅ Updated main README.md translator version"
@@ -335,9 +335,9 @@ jobs:
           
           # Update FTP/SFTP README.md
           if [[ -f "translator/integrations/ftp-sftp/README.md" ]]; then
-            # Update FTP/SFTP download badge
+            # Update FTP/SFTP download badge and URL
             sed -i 's|Download%20FTP%2FSFTP%20Release-v[0-9]*\.[0-9]*\.[0-9]*|Download%20FTP%2FSFTP%20Release-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
-            sed -i 's|SWIFT+MT%2FMX+Translator+[0-9]*\.[0-9]*\.[0-9]*|SWIFT+MT%2FMX+Translator+${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
+            sed -i 's|releases/tag/translator-v[0-9]*\.[0-9]*\.[0-9]*|releases/tag/translator-v${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
             # Update download links
             sed -i 's|swift-mt-mx-translator-[0-9]*\.[0-9]*\.[0-9]*|swift-mt-mx-translator-${{ needs.build.outputs.version }}|g' translator/integrations/ftp-sftp/README.md
             echo "✅ Updated FTP/SFTP README.md version"
