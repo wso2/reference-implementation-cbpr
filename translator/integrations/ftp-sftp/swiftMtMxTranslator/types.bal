@@ -43,6 +43,7 @@ type ClientConfig record {
     string failedFilepath;
     string skippedFilepath;
     string outwardFilepath; 
+    string outputFileNamePattern;
 };
 
 type LogConfig record {

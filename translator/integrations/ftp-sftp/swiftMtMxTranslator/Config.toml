@@ -19,23 +19,24 @@ inwardFileNamePattern = "(.*).txt"
 
 # Uncomment the following section if you want to change the MT MX Client configuration
 # Configurables for the MT->MX FTP client (used to send files)
-# [mtMxClient]
-# name = "MT MX Client 1"
-# protocol = "ftp"
-# host = "127.0.0.1"
-# port = 23
-# username = "pan"
-# password = "pan"
-# pvtKeyPath = ""
-# keyPass = ""
+[mtMxClient]
+name = "MT MX Client 1"
+protocol = "ftp"
+host = "127.0.0.1"
+port = 23
+username = "admin"
+password = "admin"
+pvtKeyPath = ""
+keyPass = ""
 # Directory where original MT messages are moved after successful processing
-# successFilepath = "/mt/success/"
+successFilepath = "/mt/success/"
 # Directory where original MT messages are moved after failed processing
-# failedFilepath = "/mt/failed/"
+failedFilepath = "/mt/failed/"
 # Directory where original MT messages are moved if processing skipped
-# skippedFilepath = "/mt/skipped/"
+skippedFilepath = "/mt/skipped/"
 # Directory where translated MT files are moved
-# outwardFilepath = "/mt/outward/"
+outwardFilepath = "/mt/outward/"
+outputFileNamePattern = ".fin"
 
 # Configurables for the MX->MT FTP listener
 [mxMtListener]
@@ -59,24 +60,25 @@ inwardFileNamePattern = "(.*).txt"
 
 # Uncomment the following section if you want to change the MX MT Client configuration
 # Configurables for the MX->MT FTP client (used to send files)
-# [mxMtClient]
-# name = "MX MT Client 1"
+[mxMtClient]
+name = "MX MT Client 1"
 # Protocol can be "ftp" or "sftp"
-# protocol = "ftp"
-# host = "127.0.0.1"
-# port = 23
-# username = "pan"
-# password = "pan"
-# pvtKeyPath = ""
-# keyPass = ""
+protocol = "ftp"
+host = "127.0.0.1"
+port = 23
+username = "admin"
+password = "admin"
+pvtKeyPath = ""
+keyPass = ""
 # Directory where original MX messages are moved after successful processing
-# successFilepath = "/mx/success/"
+successFilepath = "/mx/success/"
 # Directory where original MX messages are moved after failed processing
-# failedFilepath = "/mx/failed/"
+failedFilepath = "/mx/failed/"
 # Directory where original MX messages are moved if processing skipped
-# skippedFilepath = "/mx/skipped/"
+skippedFilepath = "/mx/skipped/"
 # Directory where translated MX files are moved
-# outwardFilepath = "/test/abc/"
+outwardFilepath = "/mx/outward/"
+outputFileNamePattern = ".xml"
 
 
 [ballerina.log]
