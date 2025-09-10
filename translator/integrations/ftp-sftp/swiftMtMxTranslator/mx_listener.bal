@@ -147,7 +147,7 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
     }
 
     handleSuccess(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, postProcessedMsg, fileName,
-            INWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt, "fin");
+            INWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt);
 }
 
 

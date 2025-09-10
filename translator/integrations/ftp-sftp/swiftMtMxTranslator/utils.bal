@@ -61,7 +61,7 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message type is not supported.
         Skipping message translation.`);
     sendToSourceFTP(sourceClient, logId, SKIP, incomingMsg, fileId);
-    sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId, "");
+    sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId);
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, status = SKIPPED);
@@ -82,15 +82,14 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
 # + mtmsgType - mt message type
 # + mxMsgType - mx message type
 # + currency - currency of transaction
-# + amount - amount of transaction  
-# + fileType - file type
+# + amount - amount of transaction
 function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, string listenerName, string logId, 
         string incomingMsg, string|xml translatedMsg, string fileId, string direction, string mtmsgType, string mxMsgType, 
-        string currency = NOT_AVAILABLE, string amount = NOT_AVAILABLE, string fileType = "txt") {
+        string currency = NOT_AVAILABLE, string amount = NOT_AVAILABLE) {
 
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message translated successfully. Sending to FTP.`);
     sendToSourceFTP(sourceClient, logId, SUCCESS, incomingMsg, fileId);
-    sendToDestinationFTP(destinationClient, logId, translatedMsg, fileId, fileType);
+    sendToDestinationFTP(destinationClient, logId, translatedMsg, fileId);
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg.toBalString(), msgId = fileId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = currency,
             amount = amount, status = SUCCESSFUL);
@@ -214,7 +213,7 @@ function sendToSourceFTP(FtpClient ftpClient, string logId, string status, strin
 # + message - message content to be sent
 # + msgId - message id 
 # + fileType - file type of the message
-function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml message, string msgId, string fileType) {
+function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml message, string msgId) {
 
     log:printDebug(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
         Sending message to FTP. Message ID: ${msgId}`);
@@ -232,7 +231,7 @@ function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml mess
 
     string:RegExp separator = re `\.`;
     string fileId = msgId != "" ? separator.split(msgId)[0] : logId;
-    string extension = fileType != "" ? string `.${fileType}` : "";
+    string extension = ftpClient.clientConfig.outputFileNamePattern;
     string outputFileName = string `${directory}/${fileId}_${fileSuffix}${extension}`;
 
     ftp:Error? ftpWrite = (ftpClient.'client)->put(outputFileName, message);

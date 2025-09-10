@@ -54,7 +54,8 @@ configurable ClientConfig mtMxClient = {
     // Directory where original MT messages are moved if processing skipped
     skippedFilepath: "/mt/skipped/",
     // Directory where translated MT files are moved
-    outwardFilepath: "/mt/outward/"
+    outwardFilepath: "/mt/outward/",
+    outputFileNamePattern: ".xml"
 };
 
 # Configurables for the MX->MT FTP listener
@@ -93,7 +94,8 @@ configurable ClientConfig mxMtClient = {
     // Directory where original MX messages are moved if processing skipped
     skippedFilepath: "/mx/skipped/",
     // Directory where translated MX files are moved
-    outwardFilepath: "/mx/outward/"
+    outwardFilepath: "/mx/outward/",
+    outputFileNamePattern: ".fin"
 };
 
 # Configurables for logging

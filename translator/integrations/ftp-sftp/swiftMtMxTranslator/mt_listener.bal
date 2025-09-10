@@ -138,7 +138,7 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
                 MX message type: ${mxMsgType}.`);
 
             // Post-process the translated MT message if the extension is enabled.
-            xml|error postProcessedMsg = postProcessMtMxMessage(translatedMsg, swiftMessage, logId);
+            xml|string|error postProcessedMsg = postProcessMtMxMessage(translatedMsg, swiftMessage, logId);
 
             if postProcessedMsg is error {
                 log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while post-processing the 
@@ -147,7 +147,8 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
                 return;
             }
             handleSuccess(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage,
-                    toXmlString(postProcessedMsg), fileName, OUTWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt);
+                    postProcessedMsg is xml ? toXmlString(postProcessedMsg) : postProcessedMsg, 
+                    fileName, OUTWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt);
         } else {
             // If the translation fails, log the error and send the original message to the failed directory.
             log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while translating MT message to MX.`,
@@ -189,7 +190,7 @@ function preProcessMtMxMessage(string message, string logId) returns string|erro
 }
 
 // Post-process the translated MT message if the extension is enabled.
-function postProcessMtMxMessage(xml message, string originalMessage, string logId) returns xml|error {
+function postProcessMtMxMessage(xml message, string originalMessage, string logId) returns xml|string|error {
 
     if !translator.mtMxExtension.postProcess {
         log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] Post-processing is disabled. 
@@ -202,7 +203,7 @@ function postProcessMtMxMessage(xml message, string originalMessage, string logI
     clientRequest.setHeader("Content-Type", "application/json");
     clientRequest.setPayload({"translatedMessage": message.toString(), "originalMessage": originalMessage});
 
-    xml|error mtmxClientResponse = mtmxClient->post(MT_MX_POST_PROCESS_CONTEXT_PATH, clientRequest);
+    xml|string|error mtmxClientResponse = mtmxClient->post(MT_MX_POST_PROCESS_CONTEXT_PATH, clientRequest);
 
     if mtmxClientResponse is error {
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error occurred while calling MTMX postprocess 
