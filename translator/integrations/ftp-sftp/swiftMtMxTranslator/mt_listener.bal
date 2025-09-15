@@ -147,7 +147,8 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
                 return;
             }
             handleSuccess(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage,
-                    postProcessedMsg, fileName, OUTWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt);
+                    postProcessedMsg is xml ? toXmlString(postProcessedMsg) : postProcessedMsg, 
+                    fileName, OUTWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt);
         } else {
             // If the translation fails, log the error and send the original message to the failed directory.
             log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while translating MT message to MX.`,

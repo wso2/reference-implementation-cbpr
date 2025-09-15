@@ -368,3 +368,16 @@ function getTransactionCcyAndAmnt(record {} swiftMessage) returns [string, strin
 function generateLogId() returns string {
     return uuid:createType1AsString();
 }
+
+// TODO: Remove `toXmlString` function once following Bal issue is fixed.
+// https://github.com/wso2-enterprise/wso2-integration-internal/issues/2231
+# Convert an XML message to a properly formatted XML string with declaration.
+#
+# + message - the XML message to be converted to string format
+# + return - the XML message as a string with proper XML declaration
+function toXmlString(xml message) returns string {
+    if message.toString().includes("<?xml") {
+        return message.toString();
+    }
+    return string `<?xml version="1.0" encoding="UTF-8"?>${message.toString()}`;
+}
