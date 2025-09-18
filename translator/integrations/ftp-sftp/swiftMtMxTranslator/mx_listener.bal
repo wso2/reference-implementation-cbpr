@@ -32,12 +32,12 @@ service on mxFileListener {
             log:printInfo(string `[Listner - ${mxMtListenerName}][${logId}] File received: ${addedFile.name}`);
             // Get the newly added file from the SFTP server as a `byte[]` stream.
             stream<byte[] & readonly, io:Error?> fileStream = check caller->get(addedFile.pathDecoded);
-            // Delete the file from the SFTP server after reading.
-            check caller->delete(addedFile.pathDecoded);
 
             // copy to local file system
             check io:fileWriteBlocksFromStream(string `/tmp/swiftTranslator/${addedFile.name}`, fileStream);
             check fileStream.close();
+            // Delete the file from the SFTP server after reading.
+            check caller->delete(addedFile.pathDecoded);
 
             // performs a read operation to read the lines as an array.
             string inMsg = check io:fileReadString(string `/tmp/swiftTranslator/${addedFile.name}`);
