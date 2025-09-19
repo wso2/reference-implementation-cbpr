@@ -54,14 +54,15 @@ function handleError(FtpClient ftpClient, string listenerName, string logId, str
 # + direction - direction of message (inward or outward)
 # + mtmsgType - message type of the MT message
 # + mxMsgType - message type of the MX message
+# + extension - file extension for storing the skipped message
 function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string listenerName, string logId, 
     string incomingMsg, string fileId, string direction, string mtmsgType = NOT_AVAILABLE, 
-    string mxMsgType = NOT_AVAILABLE) {
+    string mxMsgType = NOT_AVAILABLE, string extension = "") {
 
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message type is not supported.
         Skipping message translation.`);
     sendToSourceFTP(sourceClient, logId, SKIP, incomingMsg, fileId);
-    sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId);
+    sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId, false, extension);
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, status = SKIPPED);
@@ -213,7 +214,8 @@ function sendToSourceFTP(FtpClient ftpClient, string logId, string status, strin
 # + message - message content to be sent
 # + msgId - message id 
 # + fileType - file type of the message
-function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml message, string msgId) {
+function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml message, string msgId, 
+    boolean translated = true, string fileExtension = "") {
 
     log:printDebug(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
         Sending message to FTP. Message ID: ${msgId}`);
@@ -231,8 +233,9 @@ function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml mess
 
     string:RegExp separator = re `\.`;
     string fileId = msgId != "" ? separator.split(msgId)[0] : logId;
-    string extension = ftpClient.clientConfig.outputFileNamePattern;
-    string outputFileName = string `${directory}/${fileId}_${fileSuffix}${extension}`;
+    string extension = fileExtension != "" ? fileExtension : ftpClient.clientConfig.outputFileNamePattern;
+    string outputFileName = translated ? string `${directory}/${fileId}_${fileSuffix}${extension}` : 
+        string `${directory}/${fileId}.${extension}`;
 
     ftp:Error? ftpWrite = (ftpClient.'client)->put(outputFileName, message);
     if ftpWrite is ftp:Error {

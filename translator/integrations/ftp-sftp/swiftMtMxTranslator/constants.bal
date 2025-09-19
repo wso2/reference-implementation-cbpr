@@ -93,3 +93,5 @@ enum status {
     FAILURE = "failure",
     SKIP = "skip"
 }
+
+const UNSUPPORTED_MT_MSG_ERROR = "SWIFT message type is invalid or not supported.";

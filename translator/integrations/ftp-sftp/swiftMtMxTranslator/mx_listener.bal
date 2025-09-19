@@ -36,20 +36,22 @@ service on mxFileListener {
             // copy to local file system
             check io:fileWriteBlocksFromStream(string `/tmp/swiftTranslator/${addedFile.name}`, fileStream);
             check fileStream.close();
-            // Delete the file from the SFTP server after reading.
-            check caller->delete(addedFile.pathDecoded);
 
             // performs a read operation to read the lines as an array.
             string inMsg = check io:fileReadString(string `/tmp/swiftTranslator/${addedFile.name}`);
 
             log:printDebug(string `[Listner - ${mxMtListenerName}][${logId}] Incoming message: ${inMsg}`);
 
+            // Delete the file from the SFTP server after reading.
+            check caller->delete(addedFile.pathDecoded);
+
             // Identify if the incoming message is an ISO20022 message.
             if mtRegex.isFullMatch(inMsg) {
                 // Incoming message is a SWIFT MT message. Do not process it.
                 log:printInfo(string `[Listner - ${mxMtListenerName}] Incoming message is a SWIFT MT message. 
                     Skipping processing.`);
-                handleSkip(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, addedFile.name, INWARD);
+                handleSkip(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, addedFile.name, INWARD, 
+                    addedFile.extension);
                 return;
             }
             handleMxMtTranslation(inMsg, addedFile.name, logId);

@@ -38,8 +38,6 @@ service on mtFileListener {
             log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] File received: ${addedFile.name}`);
             // Get the newly added file from the SFTP server as a `byte[]` stream.
             stream<byte[] & readonly, io:Error?> fileStream = check caller->get(addedFile.pathDecoded);
-            // Delete the file from the SFTP server after reading.
-            check caller->delete(addedFile.pathDecoded);
 
             // copy to local file system
             check io:fileWriteBlocksFromStream(string `/tmp/swiftTranslator/${addedFile.name}`, fileStream);
@@ -49,7 +47,10 @@ service on mtFileListener {
             string inMsg = check io:fileReadString(string `/tmp/swiftTranslator/${addedFile.name}`);
             log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Incoming message: ${inMsg}`);
 
-            handleMtMxTranslation(inMsg, addedFile.name, logId);
+            // Delete the file from the SFTP server after reading.
+            check caller->delete(addedFile.pathDecoded);
+
+            handleMtMxTranslation(inMsg, addedFile.name, logId, addedFile.extension);
         }
     }
 
@@ -69,7 +70,7 @@ service on mtFileListener {
 }
 
 // Handle MT->MX translation
-function handleMtMxTranslation(string incomingMsg, string fileName, string logId) {
+function handleMtMxTranslation(string incomingMsg, string fileName, string logId, string fileExtension) {
 
     // Pre-process the incoming MT message if the extension is enabled.
     string|error swiftMessage = preProcessMtMxMessage(incomingMsg, logId);
@@ -88,12 +89,18 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
         // Unsupported messages are treated as skipped messages. 
         // If required, this can be configured to treat as a failure by configuring the 
         // skippedFilepath in the configurables.
-        handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, INWARD);
+        handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, 
+            extension = fileExtension);
         return;
     }
 
     record {}|error parsedMsg = swiftmt:parse(swiftMessage);
     if parsedMsg is error {
+        if parsedMsg.message() == UNSUPPORTED_MT_MSG_ERROR {
+            handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, 
+                extension = fileExtension);
+            return;
+        }
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while parsing MT message. 
                     Invalid MT message.`, parsedMsg);
         handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, parsedMsg, fileName, OUTWARD);
@@ -161,7 +168,8 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
         // If the message type is not supported, log the message and send it to the skip directory.
         log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Message type is ${msgType}. 
             Translator is not engaged for this message type.`);
-        handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD);
+        handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, 
+            extension = fileExtension);
 
     }
 }
