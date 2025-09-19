@@ -179,13 +179,13 @@ function sendToSourceFTP(FtpClient ftpClient, string logId, string status, strin
     string directory;
     match status {
         "success" => {
-            directory = ftpClient.clientConfig.successFilepath;
+            directory = ftpClient.clientConfig.bkpSuccessFilepath;
         }
         "failure" => {
-            directory = ftpClient.clientConfig.failedFilepath;
+            directory = ftpClient.clientConfig.bkpFailedFilepath;
         }
         "skip" => {
-            directory = ftpClient.clientConfig.skippedFilepath;
+            directory = ftpClient.clientConfig.bkpSkippedFilepath;
         }
         _ => {
             directory = "unknown";

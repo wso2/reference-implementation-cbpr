@@ -37,7 +37,7 @@ configurable ListenerConfig mtMxListener = {
 };
 
 # Configurables for the MT->MX FTP client (used to send files)
-configurable ClientConfig mtMxClient = {
+configurable ClientConfig mtClient = {
     name: "MT MX Client 1",
     // Protocol can be "ftp" or "sftp"
     protocol: mtMxListener.protocol,
@@ -48,11 +48,11 @@ configurable ClientConfig mtMxClient = {
     pvtKeyPath: mtMxListener.pvtKeyPath,
     keyPass: mtMxListener.keyPass,
     // Directory where original MT messages are moved after successful processing
-    successFilepath: "/mt/success/",
+    bkpSuccessFilepath: "/mt/success/",
     // Directory where original MT messages are moved after failed processing
-    failedFilepath: "/mt/failed/",
+    bkpFailedFilepath: "/mt/failed/",
     // Directory where original MT messages are moved if processing skipped
-    skippedFilepath: "/mt/skipped/",
+    bkpSkippedFilepath: "/mt/skipped/",
     // Directory where translated MT files are moved
     outwardFilepath: "/mt/outward/",
     outputFileNamePattern: ".xml"
@@ -77,7 +77,7 @@ configurable ListenerConfig mxMtListener = {
 };
 
 # Configurables for the MX->MT FTP client (used to send files) 
-configurable ClientConfig mxMtClient = {
+configurable ClientConfig mxClient = {
     name: "MX MT Client 1",
     // Protocol can be "ftp" or "sftp"
     protocol: mxMtListener.protocol,
@@ -88,11 +88,11 @@ configurable ClientConfig mxMtClient = {
     pvtKeyPath: mxMtListener.pvtKeyPath,
     keyPass: mxMtListener.keyPass,
     // Directory where original MX messages are moved after successful processing
-    successFilepath: "/mx/success/",
+    bkpSuccessFilepath: "/mx/success/",
     // Directory where original MX messages are moved after failed processing
-    failedFilepath: "/mx/failed/",
+    bkpFailedFilepath: "/mx/failed/",
     // Directory where original MX messages are moved if processing skipped
-    skippedFilepath: "/mx/skipped/",
+    bkpSkippedFilepath: "/mx/skipped/",
     // Directory where translated MX files are moved
     outwardFilepath: "/mx/outward/",
     outputFileNamePattern: ".fin"

@@ -43,27 +43,27 @@ listener ftp:Listener mxFileListener = new ({
 // MT->MX Translator FTP client auth configurations
 ftp:AuthConfiguration mxMtClientFtpListenerAuthConfig = {
     credentials: {
-        username: mxMtClient.username,
-        password: mxMtClient.password
+        username: mxClient.username,
+        password: mxClient.password
     },
-    privateKey: mxMtClient.pvtKeyPath == "" ? () : {
-        path: mxMtClient.pvtKeyPath,
-        password: mxMtClient.keyPass
+    privateKey: mxClient.pvtKeyPath == "" ? () : {
+        path: mxClient.pvtKeyPath,
+        password: mxClient.keyPass
     }
 };
 
 // MT->MX Translator FTP client
 ftp:Client mxFileClient = check new ({
-    protocol: mxMtClient.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
-    host: mxMtClient.host,
-    port: mxMtClient.port,
+    protocol: mxClient.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
+    host: mxClient.host,
+    port: mxClient.port,
     auth: mxMtClientFtpListenerAuthConfig
 });
 
 string mxMtListenerName = mxMtListener.name;
 
 FtpClient mxMtClientObj = {
-    clientConfig: mxMtClient,
+    clientConfig: mxClient,
     'client: mxFileClient
 };
 FtpListener mxMtListenerObj = {

@@ -39,9 +39,9 @@ type ClientConfig record {
     string password;
     string pvtKeyPath;
     string keyPass;
-    string successFilepath;
-    string failedFilepath;
-    string skippedFilepath;
+    string bkpSuccessFilepath;
+    string bkpFailedFilepath;
+    string bkpSkippedFilepath;
     string outwardFilepath; 
     string outputFileNamePattern;
 };
