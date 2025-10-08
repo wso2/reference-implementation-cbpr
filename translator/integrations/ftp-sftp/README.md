@@ -122,6 +122,7 @@ Configure your FTP/SFTP connections in `Config.toml`:
 # MT->MX Listener Configuration
 [mtMxListener]
 name = "MT MX Listener"
+enable = true
 protocol = "ftp"  # Options: "ftp" or "sftp"
 host = "127.0.0.1"
 port = 21  # Use 22 for SFTP
@@ -136,6 +137,7 @@ inwardFileNamePattern = "(.*).txt"
 # MT->MX Client Configuration (for sending translated files)
 [mtMxClient]
 name = "MT MX Client"
+enable = true
 protocol = "ftp"
 host = "127.0.0.1"
 port = 21
@@ -143,14 +145,16 @@ username = "your_username"
 password = "your_password"
 pvtKeyPath = "" # For SFTP with private key authentication
 keyPass = "" # For SFTP with private key authentication (if key is encrypted)
-successFilepath = "/mt/success/"
-failedFilepath = "/mt/failed/"
-skippedFilepath = "/mt/skipped/"
+bkpSuccessFilepath = "/mt/success/"
+bkpFailedFilepath = "/mt/failed/"
+bkpSkippedFilepath = "/mt/skipped/"
 outwardFilepath = "/mt/outward/"
+outputFileNamePattern = ".fin"
 
 # MX->MT Listener Configuration
 [mxMtListener]
 name = "MX MT Listener"
+enable = true
 protocol = "ftp"
 host = "127.0.0.1"
 port = 21
@@ -165,6 +169,7 @@ inwardFileNamePattern = "(.*).xml"
 # MX->MT Client Configuration
 [mxMtClient]
 name = "MX MT Client"
+enable = true
 protocol = "ftp"
 host = "127.0.0.1"
 port = 21
@@ -172,10 +177,11 @@ username = "your_username"
 password = "your_password"
 pvtKeyPath = ""
 keyPass = ""
-successFilepath = "/mx/success/"
-failedFilepath = "/mx/failed/"
-skippedFilepath = "/mx/skipped/"
+bkpSuccessFilepath = "/mx/success/"
+bkpFailedFilepath = "/mx/failed/"
+bkpSkippedFilepath = "/mx/skipped/"
 outwardFilepath = "/mx/outward/"
+outputFileNamePattern = ".xml"
 
 # Logging Configuration
 [ballerina.log]
