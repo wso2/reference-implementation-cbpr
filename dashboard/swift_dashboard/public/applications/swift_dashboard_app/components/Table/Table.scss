@@ -35,6 +35,8 @@
     padding: 0.9375rem; /* 15px */
     text-align: center;
     border-bottom: 0.0625rem solid #eaeaea; /* 1px */
+    word-break: break-all;
+    vertical-align: middle;
 }
 
 .table thead {
@@ -126,6 +128,9 @@
     border: 0.0625rem solid #ccc; /* 1px */
     border-radius: 0.25rem; /* 4px */
     margin-top: 0.5rem; /* Add some space between the header text and the input */
+    padding-top: 10px;
+    padding-bottom: 10px;
+    height: 2.5rem;
 }
 
 /* Styles for min and max input fields */
