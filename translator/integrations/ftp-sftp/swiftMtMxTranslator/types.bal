@@ -18,6 +18,7 @@ import ballerina/ftp;
 
 type ListenerConfig record {
     string name;
+    boolean enable = true;
     string protocol;
     string host;
     int port;
@@ -32,6 +33,7 @@ type ListenerConfig record {
 
 type ClientConfig record {
     string name;
+    boolean enable = true;
     string protocol;
     string host;
     int port;
@@ -53,12 +55,12 @@ type LogConfig record {
 
 type FtpClient record {
     ClientConfig clientConfig;
-    ftp:Client 'client;
+    ftp:Client? 'client;
 };
 
 type FtpListener record {
     ListenerConfig listenerConfig;
-    ftp:Listener 'listener;
+    ftp:Listener? 'listener;
 };
 
 type Extension record{

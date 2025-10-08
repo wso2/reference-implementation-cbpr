@@ -162,7 +162,7 @@ function appendToDashboardLogs(string listenerName, string orgnlMessage, string 
 # + e - error encountered during logging
 function handleLogFailure(string listenerName, string logId, error e) {
     log:printError(string `[Listener - ${listenerName}][${logId}] Error while logging to dashboard.`,
-        err = e.toBalString());
+            err = e.toBalString());
 }
 
 # Send a message to the source FTP server.
@@ -174,73 +174,85 @@ function handleLogFailure(string listenerName, string logId, error e) {
 # + fileName - name of the file being processed
 function sendToSourceFTP(FtpClient ftpClient, string logId, string status, string message, string fileName) {
 
-    log:printInfo(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Sending message to FTP. Status: ${status} 
-        Message ID: ${fileName}`);
-    string directory;
-    match status {
-        "success" => {
-            directory = ftpClient.clientConfig.bkpSuccessFilepath;
-        }
-        "failure" => {
-            directory = ftpClient.clientConfig.bkpFailedFilepath;
-        }
-        "skip" => {
-            directory = ftpClient.clientConfig.bkpSkippedFilepath;
-        }
-        _ => {
-            directory = "unknown";
-            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Unknown file write status: 
+    ftp:Client? 'client = ftpClient.'client;
+    if 'client is ftp:Client {
+        string directory;
+        match status {
+            "success" => {
+                directory = ftpClient.clientConfig.bkpSuccessFilepath;
+            }
+            "failure" => {
+                directory = ftpClient.clientConfig.bkpFailedFilepath;
+            }
+            "skip" => {
+                directory = ftpClient.clientConfig.bkpSkippedFilepath;
+            }
+            _ => {
+                directory = "unknown";
+                log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Unknown file write status: 
                 ${status}`);
-            return;
+                return;
+            }
         }
-    }
 
-    string fileId = fileName != "" ? fileName : logId;
+        string fileId = fileName != "" ? fileName : logId;
 
-    string outputFileName = string `${directory}/${fileId}`;
+        string outputFileName = string `${directory}/${fileId}`;
 
-    ftp:Error? ftpWrite = (ftpClient.'client)->put(outputFileName, message);
-    if ftpWrite is ftp:Error {
-        log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Error while sending SWIFT message 
-            to FTP`, err = ftpWrite.toBalString());
+        ftp:Error? ftpWrite = ('client)->put(outputFileName, message);
+        if ftpWrite is ftp:Error {
+            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Error while sending SWIFT message 
+            to FTP ${outputFileName}`, err = ftpWrite.toBalString());
+        } else {
+            log:printInfo(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
+                Sending message to FTP ${outputFileName}. Status: ${status} Message ID: ${fileName}`);
+        }
+    } else {
+        log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] FTP client is not initialized.`);
     }
 }
 
-
 # Send a message to the destination FTP server.
 #
-# + ftpClient - ftp client instance to interact with the FTP server
+# + ftpClient - ftp client instance to interact with the FTP server  
 # + logId - log identifier for tracking the operation  
-# + message - message content to be sent
-# + msgId - message id 
-# + fileType - file type of the message
-function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml message, string msgId, 
-    boolean translated = true, string fileExtension = "") {
+# + message - message content to be sent  
+# + msgId - message id  
+# + translated - indicates if the message is translated or not
+# + fileExtension - file extension for storing the message
+function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml message, string msgId,
+        boolean translated = true, string fileExtension = "") {
 
-    log:printDebug(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
-        Sending message to FTP. Message ID: ${msgId}`);
-    time:Utc currentTime = time:utcNow();
-    time:Civil civilTime = time:utcToCivil(currentTime);
-    string|time:Error timestamp = time:civilToString(civilTime);
-    if timestamp is time:Error {
-        log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
+    ftp:Client? 'client = ftpClient.'client;
+    if 'client is ftp:Client {
+        time:Utc currentTime = time:utcNow();
+        time:Civil civilTime = time:utcToCivil(currentTime);
+        string|time:Error timestamp = time:civilToString(civilTime);
+        if timestamp is time:Error {
+            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
             Error while generating timestamp`, err = timestamp.toBalString());
-        return;
-    }
-    string fileSuffix = timestamp.substring(0, 10) + "_" + timestamp.substring(11, 13) + "-" + 
+            return;
+        }
+        string fileSuffix = timestamp.substring(0, 10) + "_" + timestamp.substring(11, 13) + "-" +
         timestamp.substring(14, 16) + "-" + timestamp.substring(17, 19);
-    string directory = ftpClient.clientConfig.outwardFilepath;
+        string directory = ftpClient.clientConfig.outwardFilepath;
 
-    string:RegExp separator = re `\.`;
-    string fileId = msgId != "" ? separator.split(msgId)[0] : logId;
-    string extension = fileExtension != "" ? fileExtension : ftpClient.clientConfig.outputFileNamePattern;
-    string outputFileName = translated ? string `${directory}/${fileId}_${fileSuffix}${extension}` : 
-        string `${directory}/${fileId}.${extension}`;
+        string:RegExp separator = re `\.`;
+        string fileId = msgId != "" ? separator.split(msgId)[0] : logId;
+        string extension = fileExtension != "" ? fileExtension : ftpClient.clientConfig.outputFileNamePattern;
+        string outputFileName = translated ? string `${directory}/${fileId}_${fileSuffix}${extension}` :
+            string `${directory}/${fileId}.${extension}`;
 
-    ftp:Error? ftpWrite = (ftpClient.'client)->put(outputFileName, message);
-    if ftpWrite is ftp:Error {
-        log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Error while sending SWIFT 
-            message to FTP`, err = ftpWrite.toBalString());
+        ftp:Error? ftpWrite = ('client)->put(outputFileName, message);
+        if ftpWrite is ftp:Error {
+            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Error while sending SWIFT 
+            message to FTP ${outputFileName}`, err = ftpWrite.toBalString());
+        } else {
+            log:printDebug(string `[Client - ${ftpClient.clientConfig.name}][${logId}]
+                Sending message to FTP ${outputFileName}. Message ID: ${msgId}`);
+        }
+    } else {
+        log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] FTP client is not initialized.`);
     }
 }
 

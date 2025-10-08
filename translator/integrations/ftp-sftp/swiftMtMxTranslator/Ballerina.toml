@@ -6,3 +6,21 @@ distribution = "2201.10.5"
 
 [build-options]
 observabilityIncluded = true
+
+# [[dependency]]
+# org = "ballerinax"
+# name = "financial.swiftmtToIso20022"
+# version = "1.0.5"
+# repository="local"
+
+# [[dependency]]
+# org = "ballerinax"
+# name = "financial.iso20022ToSwiftmt"
+# version = "1.0.4"
+# repository="local"
+
+# [[dependency]]
+# org = "ballerinax"
+# name = "financial.swift.mt"
+# version = "3.0.5"
+# repository="local"

@@ -16,6 +16,7 @@
 
 import ballerina/ftp;
 import ballerina/http;
+import ballerina/log;
 
 // MT->MX Translator FTP listener auth configurations
 ftp:AuthConfiguration mxMtListenerFtpListenerAuthConfig = {
@@ -30,7 +31,14 @@ ftp:AuthConfiguration mxMtListenerFtpListenerAuthConfig = {
 };
 
 // MT->MX Translator FTP listener
-listener ftp:Listener mxFileListener = new ({
+ftp:Listener? mxFileListener = getMxMtListener();
+
+public function getMxMtListener() returns ftp:Listener? {
+
+    if !mxMtListener.enable {
+        return;
+    }
+    ftp:Listener|ftp:Error 'listener = new ({
     protocol: mxMtListener.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
     host: mxMtListener.host,
     auth: mxMtListenerFtpListenerAuthConfig,
@@ -39,9 +47,16 @@ listener ftp:Listener mxFileListener = new ({
     fileNamePattern: mxMtListener.inwardFileNamePattern,
     pollingInterval: mxMtListener.pollingInterval
 });
+    if ('listener is ftp:Error) {
+        log:printError("Error occurred while creating the FTP listener", 'error = 'listener);
+        return;
+    }
+    return 'listener;
+
+}
 
 // MT->MX Translator FTP client auth configurations
-ftp:AuthConfiguration mxMtClientFtpListenerAuthConfig = {
+ftp:AuthConfiguration mxClientFtpListenerAuthConfig = {
     credentials: {
         username: mxClient.username,
         password: mxClient.password
@@ -52,13 +67,27 @@ ftp:AuthConfiguration mxMtClientFtpListenerAuthConfig = {
     }
 };
 
-// MT->MX Translator FTP client
-ftp:Client mxFileClient = check new ({
-    protocol: mxClient.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
-    host: mxClient.host,
-    port: mxClient.port,
-    auth: mxMtClientFtpListenerAuthConfig
+// MX Server FTP client
+ftp:Client? mxFileClient = getMxClient();
+
+public function getMxClient() returns ftp:Client? {
+    if !mxClient.enable {
+        log:printWarn(string `[Client - ${mxClient.name}] Client is disabled.`);
+        return;
+    }
+    ftp:Client|ftp:Error 'client = new ({
+        protocol: mxClient.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
+        host: mxClient.host,
+        auth: mxClientFtpListenerAuthConfig,
+        port: mxClient.port
 });
+    if ('client is ftp:Error) {
+        log:printError("Error occurred while creating the FTP client", 'error = 'client);
+        return;
+    }
+    log:printInfo(string `[Client - ${mxClient.name}] Client started.`);
+    return 'client;
+}
 
 string mxMtListenerName = mxMtListener.name;
 
@@ -71,4 +100,4 @@ FtpListener mxMtListenerObj = {
     'listener: mxFileListener
 };
 
-http:Client mxmtClient = check new (mxMtExtension.basepath);
+http:Client mxmtExtHttpClient = check new (mxMtExtension.basepath);

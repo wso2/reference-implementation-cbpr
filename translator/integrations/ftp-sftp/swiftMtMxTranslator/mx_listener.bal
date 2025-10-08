@@ -22,7 +22,7 @@ import ballerinax/financial.iso20022ToSwiftmt as mxToMt;
 import ballerinax/financial.swift.mt as swiftmt;
 
 // MT->MX Translator service
-service on mxFileListener {
+ftp:Service mxFileListenerService = service object {
 
     remote function onFileChange(ftp:WatchEvent & readonly event, ftp:Caller caller) returns error? {
 
@@ -57,12 +57,7 @@ service on mxFileListener {
             handleMxMtTranslation(inMsg, addedFile.name, logId);
         }
     }
-
-    function init() {
-        log:printInfo(string `[Listner - ${mxMtListenerName}] Listener started.`);
-
-    }
-}
+};
 
 // Handle the translation of MX to MT messages.
 function handleMxMtTranslation(string inMsg, string fileName, string logId) {

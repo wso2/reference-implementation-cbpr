@@ -19,6 +19,7 @@
 # Configurables for the MT->MX FTP listener
 configurable ListenerConfig mtMxListener = {
     name: "MT MX Listener 1",
+    enable: true,
     // Protocol can be "ftp" or "sftp"
     protocol: "sftp",
     host: "127.0.0.1",
@@ -39,6 +40,7 @@ configurable ListenerConfig mtMxListener = {
 # Configurables for the MT->MX FTP client (used to send files)
 configurable ClientConfig mtClient = {
     name: "MT MX Client 1",
+    enable: true,
     // Protocol can be "ftp" or "sftp"
     protocol: mtMxListener.protocol,
     host: mtMxListener.host,
@@ -61,6 +63,7 @@ configurable ClientConfig mtClient = {
 # Configurables for the MX->MT FTP listener
 configurable ListenerConfig mxMtListener = {
     name: "MX MT Listener 1",
+    enable: true,
     // Protocol can be "ftp" or "sftp"
     protocol: "sftp",
     host: "127.0.0.1",
@@ -79,6 +82,7 @@ configurable ListenerConfig mxMtListener = {
 # Configurables for the MX->MT FTP client (used to send files) 
 configurable ClientConfig mxClient = {
     name: "MX MT Client 1",
+    enable: true,
     // Protocol can be "ftp" or "sftp"
     protocol: mxMtListener.protocol,
     host: mxMtListener.host,

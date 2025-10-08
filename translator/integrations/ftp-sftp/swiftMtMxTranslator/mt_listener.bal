@@ -21,11 +21,9 @@ import ballerina/log;
 
 import ballerinax/financial.swift.mt as swiftmt;
 import ballerinax/financial.swiftmtToIso20022 as mtToMx;
-import ballerina/time;
-
 
 // MT->MX Translator service
-service on mtFileListener {
+ftp:Service mtFileListenerService = service object {
 
     // When a file event is successfully received, the `onFileChange` method is called.
     remote function onFileChange(ftp:WatchEvent & readonly event, ftp:Caller caller) returns error? {
@@ -54,20 +52,7 @@ service on mtFileListener {
         }
     }
 
-    function init() {
-        time:Utc utc = time:utcNow();
-        string date = time:utcToString(utc).substring(0, 10);
-        string filePath = log.ballerinaLogFilePath + "/ballerina" + date + ".log";
-        log:Error? outputFile = log:setOutputFile(filePath, log:APPEND);
-        if outputFile is log:Error {
-            log:printWarn(string `[Listner - ${mtMxListenerName}] Failed to set the output file for ballerina log.`);
-        }
-        log:printInfo(string `[Listner - ${mtMxListenerName}] Listener started.`);
-        
-        // Initialize log rotator for daily log rotation
-        initLogRotator();
-    }
-}
+};
 
 // Handle MT->MX translation
 function handleMtMxTranslation(string incomingMsg, string fileName, string logId, string fileExtension) {
@@ -184,7 +169,7 @@ function preProcessMtMxMessage(string message, string logId) returns string|erro
     }
     log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] MTMX pre-process extension engaged.`);
     log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Pre-processing message: ${message.toBalString()}`);
-    string|error mtmxClientResponse = mtmxClient->post(MT_MX_PRE_PROCESS_CONTEXT_PATH, message);
+    string|error mtmxClientResponse = mtmxExtHttpClient->post(MT_MX_PRE_PROCESS_CONTEXT_PATH, message);
 
     if mtmxClientResponse is error {
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error occurred while calling MTMX preprocess 
@@ -211,7 +196,7 @@ function postProcessMtMxMessage(xml message, string originalMessage, string logI
     clientRequest.setHeader("Content-Type", "application/json");
     clientRequest.setPayload({"translatedMessage": message.toString(), "originalMessage": originalMessage});
 
-    xml|string|error mtmxClientResponse = mtmxClient->post(MT_MX_POST_PROCESS_CONTEXT_PATH, clientRequest);
+    xml|string|error mtmxClientResponse = mtmxExtHttpClient->post(MT_MX_POST_PROCESS_CONTEXT_PATH, clientRequest);
 
     if mtmxClientResponse is error {
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error occurred while calling MTMX postprocess 

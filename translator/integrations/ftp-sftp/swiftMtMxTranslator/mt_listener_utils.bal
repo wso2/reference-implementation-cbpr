@@ -16,6 +16,7 @@
 
 import ballerina/ftp;
 import ballerina/http;
+import ballerina/log;
 
 // MT->MX Translator FTP listener auth configurations
 ftp:AuthConfiguration mtMxListenerFtpListenerAuthConfig = {
@@ -24,41 +25,68 @@ ftp:AuthConfiguration mtMxListenerFtpListenerAuthConfig = {
         password: mtMxListener.password
     },
     privateKey: mtMxListener.pvtKeyPath == "" ? () : {
-        path: mtMxListener.pvtKeyPath,
-        password: mtMxListener.keyPass
-    }
+            path: mtMxListener.pvtKeyPath,
+            password: mtMxListener.keyPass
+        }
 };
 
 // MT->MX Translator FTP listener
-listener ftp:Listener mtFileListener = new ({
-    protocol: mtMxListener.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
-    host: mtMxListener.host,
-    auth: mtMxListenerFtpListenerAuthConfig,
-    port: mtMxListener.port,
-    path: mtMxListener.inwardFilepath,
-    fileNamePattern: mtMxListener.inwardFileNamePattern,
-    pollingInterval: mtMxListener.pollingInterval
-});
+ftp:Listener? mtFileListener = getMtMXListener();
+
+public function getMtMXListener() returns ftp:Listener? {
+
+    if !mtMxListener.enable {
+        return;
+    }
+    ftp:Listener|ftp:Error 'listener = new ({
+        protocol: mtMxListener.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
+        host: mtMxListener.host,
+        auth: mtMxListenerFtpListenerAuthConfig,
+        port: mtMxListener.port,
+        path: mtMxListener.inwardFilepath,
+        fileNamePattern: mtMxListener.inwardFileNamePattern,
+        pollingInterval: mtMxListener.pollingInterval
+    });
+    if ('listener is ftp:Error) {
+        log:printError("Error occurred while creating the FTP listener", 'error = 'listener);
+        return;
+    }
+    return 'listener;
+}
 
 // MT->MX Translator FTP client auth configurations
-ftp:AuthConfiguration mtMxClientFtpListenerAuthConfig = {
+ftp:AuthConfiguration mtClientFtpListenerAuthConfig = {
     credentials: {
         username: mtClient.username,
         password: mtClient.password
     },
     privateKey: mtClient.pvtKeyPath == "" ? () : {
-        path: mtClient.pvtKeyPath,
-        password: mtClient.keyPass
-    }
+            path: mtClient.pvtKeyPath,
+            password: mtClient.keyPass
+        }
 };
 
-// MT->MX Translator FTP client
-ftp:Client mtFileClient = check new ({
-    protocol: mtClient.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
-    host: mtClient.host,
-    port: mtClient.port,
-    auth: mtMxClientFtpListenerAuthConfig
-});
+// FTP client for MT server
+ftp:Client? mtFileClient = getMtClient();
+
+public function getMtClient() returns ftp:Client? {
+    if !mtClient.enable {
+        log:printWarn(string `[Client - ${mtClient.name}] Client is disabled.`);
+        return;
+    }
+    ftp:Client|ftp:Error 'client = new ({
+        protocol: mtClient.protocol == "sftp" ? ftp:SFTP : ftp:FTP,
+        host: mtClient.host,
+        auth: mtClientFtpListenerAuthConfig,
+        port: mtClient.port
+    });
+    if ('client is ftp:Error) {
+        log:printError("Error occurred while creating the FTP client", 'error = 'client);
+        return;
+    }
+    log:printInfo(string `[Client - ${mtClient.name}] Client started.`);
+    return 'client;
+}
 
 string mtMxListenerName = mtMxListener.name;
 FtpClient mtMxClientObj = {
@@ -70,6 +98,6 @@ FtpListener mtMxListenerObj = {
     'listener: mtFileListener
 };
 
-http:Client mtmxClient = check new (mtMxExtension.basepath);
+http:Client mtmxExtHttpClient = check new (mtMxExtension.basepath);
 
 string[] supportedMessageTypes = translator.supportedMTMessageTypes ?: supportedMTMessageTypes;

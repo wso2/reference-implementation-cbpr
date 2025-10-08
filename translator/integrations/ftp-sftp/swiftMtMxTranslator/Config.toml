@@ -1,6 +1,7 @@
 # Configurables for the MT->MX FTP listener
 [mtMxListener]
 name = "MT MX Listener 1"
+enable = true
 # Protocol can be "ftp" or "sftp"
 protocol = "ftp"
 host = "127.0.0.1"
@@ -20,6 +21,7 @@ inwardFileNamePattern = "(.*).txt"
 # Configurables for the MT Server client (used to send files)
 [mtClient]
 name = "MT MX Client 1"
+enable = true
 protocol = "ftp"
 host = "127.0.0.1"
 port = 23
@@ -39,6 +41,7 @@ outputFileNamePattern = ".fin"
 
 # Configurables for the MX->MT FTP listener
 [mxMtListener]
+enable = true
 name = "MX MT Listener 1"
 # Protocol can be "ftp" or "sftp"
 protocol = "ftp"
@@ -54,11 +57,12 @@ pollingInterval = 1.0
 # Directory where incoming MX files are placed
 inwardFilepath = "/mx/inward/"
 # Pattern to match incoming file names
-inwardFileNamePattern = "(.*).txt"
+inwardFileNamePattern = "(.*).ia|(.*).xml"
 
 # Configurables for the MX Server client (used to send files)
 [mxClient]
 name = "MX MT Client 1"
+enable = true
 # Protocol can be "ftp" or "sftp"
 protocol = "ftp"
 host = "127.0.0.1"

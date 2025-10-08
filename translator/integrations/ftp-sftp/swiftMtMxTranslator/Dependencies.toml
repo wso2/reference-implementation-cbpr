@@ -206,6 +206,9 @@ version = "0.0.0"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
 ]
+modules = [
+	{org = "ballerina", packageName = "lang.runtime", moduleName = "lang.runtime"}
+]
 
 [[package]]
 org = "ballerina"
@@ -383,7 +386,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "financial.swift.mt"
-version = "3.0.2"
+version = "3.0.4"
 dependencies = [
 	{org = "ballerina", name = "data.xmldata"},
 	{org = "ballerina", name = "jballerina.java"},
@@ -399,7 +402,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "financial.swiftmtToIso20022"
-version = "1.0.1"
+version = "1.0.3"
 dependencies = [
 	{org = "ballerina", name = "data.xmldata"},
 	{org = "ballerina", name = "io"},
@@ -425,6 +428,7 @@ dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "lang.regexp"},
+	{org = "ballerina", name = "lang.runtime"},
 	{org = "ballerina", name = "log"},
 	{org = "ballerina", name = "regex"},
 	{org = "ballerina", name = "task"},
