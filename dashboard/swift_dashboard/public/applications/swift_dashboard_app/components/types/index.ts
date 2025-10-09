@@ -17,6 +17,7 @@
 export interface MessageData {
 
     id: string,
+    refId: string,
     mtMessageType: string,
     mxMessageType: string,
     direction: string,

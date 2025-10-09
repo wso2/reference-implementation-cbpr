@@ -22,6 +22,7 @@ import { TableFilters } from '../MessagesPage'; // Make sure this path is correc
 interface TableProps {
     data: {
         id: string;
+        refId: string;
         mtMessageType: string;
         mxMessageType: string;
         currency: string;
@@ -44,6 +45,7 @@ const Table: React.FC<TableProps> = ({
     onRowClick, 
     filters = {
         id: '',
+        refId: '',
         mtMessageType: '',
         mxMessageType: '',
         direction: '',
@@ -85,7 +87,20 @@ const Table: React.FC<TableProps> = ({
                 <thead>
                     <tr>
                         <th>
-                            <div className='msgType'>Message ID</div>
+                            <div className='msgType'>Reference ID</div>
+                            {!disableFilters && (
+                                <input 
+                                    type="text" 
+                                    name="refId" 
+                                    value={filters.refId} 
+                                    onChange={handleFilterChange} 
+                                    placeholder="Search Reference ID" 
+                                    className={filters.refId ? 'activeFilter' : ''}
+                                />
+                            )}
+                        </th>
+                        <th>
+                            <div className='msgType'>File name</div>
                             {!disableFilters && (
                                 <input 
                                     type="text" 

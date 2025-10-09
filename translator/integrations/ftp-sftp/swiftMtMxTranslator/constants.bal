@@ -86,10 +86,13 @@ const string MESSAGE_TYPE = "messageType";
 const string VALIDATION_FLAG = "ValidationFlag";
 const string VALUE = "value";
 
-regexp:RegExp mtRegex = re `^\{1:[^\}]+\}\{2:[^\}]+\}(\{3:[^\}]+\}\})?(\{4:\n)?(.*\n)*-\}(\{5:[^\}]+\}\})?`;
+regexp:RegExp mtRegex = re `^\{1:[^\}]+\}(\{2:[^\}]+\})?(\{3:[^\}]+\}\})?(\{4:\n)?(.*\n)*-\}(\{5:[^\}]+\}\})?(\{S:.*\})*`;
 
 enum status {
     SUCCESS = "success",
     FAILURE = "failure",
     SKIP = "skip"
 }
+
+const UNSUPPORTED_MT_MSG_ERROR = "SWIFT message type is invalid or not supported.";
+xmlns "urn:iso:std:iso:20022:tech:xsd:head.001.001.02" as head;

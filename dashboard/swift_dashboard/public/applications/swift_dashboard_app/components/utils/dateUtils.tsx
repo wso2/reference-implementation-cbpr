@@ -68,7 +68,6 @@ export function getDayRange(): {
     endOfToday.setUTCHours(23, 59, 59, 999);
     
     const startDateStr = today.toISOString().split('T')[0];
-    console.log('startDateStr', startDateStr);
     const endDateStr = endOfToday.toISOString().split('T')[0];
     
     return {
@@ -110,7 +109,6 @@ export function getDayRange(): {
     
     // Format dates for query
     const startDateStr = startOfWeek.toISOString().split('T')[0];
-    console.log('startDateStr', startDateStr);
     const endDateStr = endOfWeek.toISOString().split('T')[0];
     
     return {
@@ -143,7 +141,6 @@ export function getDayRange(): {
     
     // Format dates for query
     const startDateStr = startOfMonth.toISOString().split('T')[0];
-    console.log('startDateStr', startDateStr);
     const endDateStr = endOfMonth.toISOString().split('T')[0];
     
     return {

@@ -71,7 +71,7 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
     if iso20022MessageString is error {
         log:printError(string `[Listner - ${mxMtListenerName}][${logId}] Error while pre-processing MX message.`,
                 err = iso20022MessageString.toBalString());
-        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, iso20022MessageString, fileName, INWARD);
+        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, iso20022MessageString, fileName, INWARD, UNKNOWN);
         return;
     }
 
@@ -79,24 +79,26 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
     if iso20022Message is error {
         log:printError(string `[Listner - ${mxMtListenerName}][${logId}] Error occurred while converting the 
             string to XML.`, err = iso20022Message.toBalString());
-        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, iso20022Message, fileName, INWARD);
+        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, iso20022Message, fileName, INWARD, UNKNOWN);
         return;
 
     }
 
     record {}|error mtRecord = mxToMt:toSwiftMtMessage(iso20022Message);
 
+    string refId = extractRefId((), iso20022Message);
+
     if mtRecord is error {
         log:printError(string `[Listner - ${mxMtListenerName}][${logId}] Error occurred while converting the 
             ISO20022 message to SWIFT MT message.`, err = mtRecord.toBalString());
-        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, mtRecord, fileName, INWARD);
+        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, mtRecord, fileName, INWARD, refId);
         return;
     }
     string|error mxMsgType = getMxMessageType(iso20022Message);
     if mxMsgType is error {
         log:printError(string `[Listner - ${mxMtListenerName}][${logId}] Error while retrieving MX message type.`,
                 err = mxMsgType.toBalString());
-        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, mxMsgType, fileName, INWARD);
+        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, mxMsgType, fileName, INWARD, refId);
         return;
     }
 
@@ -112,7 +114,7 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while retrieving MT message type.`,
                 error("Invalid MT message type."));
         handleError(mtMxClientObj, mtMxListenerName, logId, inMsg, error("Invalid MT message type."),
-                fileName, OUTWARD);
+                fileName, OUTWARD, refId);
         return;
     }
 
@@ -133,7 +135,7 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
     if finMessage is error {
         log:printError(string `[Listner - ${mxMtListenerName}][${logId}] Error occurred while converting the SWIFT MT 
             message to FIN message.`, err = finMessage.toBalString());
-        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, finMessage, fileName, INWARD);
+        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, finMessage, fileName, INWARD, refId);
         return;
     }
 
@@ -142,12 +144,12 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
     if postProcessedMsg is error {
         log:printError(string `[Listner - ${mxMtListenerName}][${logId}] Error while post-processing FIN message.`,
                 err = postProcessedMsg.toBalString());
-        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, postProcessedMsg, fileName, INWARD);
+        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, postProcessedMsg, fileName, INWARD, refId);
         return;
     }
 
     handleSuccess(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, postProcessedMsg, fileName,
-            INWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt);
+            INWARD, refId, mtMsgType, mxMsgType, msgCcy, msgAmnt);
 }
 
 
@@ -160,7 +162,7 @@ function preProcessMxMtMessage(string message, string logId) returns string|erro
     }
     log:printInfo(string `[Listner - ${mxMtListenerName}][${logId}] MXMT pre-process extension engaged.`);
     log:printDebug(string `[Listner - ${mxMtListenerName}][${logId}] Pre-processing message: ${message.toBalString()}`);
-    string|error mxmtClientResponse = mxmtClient->post(MX_MT_PRE_PROCESS_CONTEXT_PATH, message);
+    string|error mxmtClientResponse = mxmtExtHttpClient->post(MX_MT_PRE_PROCESS_CONTEXT_PATH, message);
 
     if mxmtClientResponse is error {
         log:printError(string `[Listner - ${mxMtListenerName}] Error occurred while calling MXMT preprocess endpoint.`,
@@ -187,7 +189,7 @@ function postProcessMxMtMessage(string message, string originalMessage, string l
     clientRequest.setHeader("Content-Type", "application/json");
     clientRequest.setPayload({"translatedMessage": message.toString(), "originalMessage": originalMessage});
 
-    string|error mxmtClientResponse = mxmtClient->post(MX_MT_POST_PROCESS_CONTEXT_PATH, clientRequest);
+    string|error mxmtClientResponse = mxmtExtHttpClient->post(MX_MT_POST_PROCESS_CONTEXT_PATH, clientRequest);
 
     if mxmtClientResponse is error {
         log:printError(string `[Listner - ${mxMtListenerName}] Error occurred while calling MXMT postprocess endpoint.`,

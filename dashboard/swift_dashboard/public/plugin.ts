@@ -54,8 +54,6 @@ export class SwiftDashboardPlugin implements Plugin<SwiftDashboardPluginSetup, S
         
         // Safer dynamic import
         try {
-            // const applicationsModule = await import('./applications/index.ts.bkp');
-            // console.log('Applications module imported:', applicationsModule);
             
             if (!renderApp) {
               throw new Error('renderApp function not found in applications module');

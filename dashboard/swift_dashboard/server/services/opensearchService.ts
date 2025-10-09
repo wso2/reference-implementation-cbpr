@@ -137,6 +137,7 @@ class OpenSearchService {
         const source = hit._source || ({} as any);
         return {
           id: source.id,
+          refId: source.refId,
           mtMessageType: source.mtMessageType || "",
           mxMessageType: source.mxMessageType || "",
           direction: source.direction || "",
@@ -267,6 +268,7 @@ class OpenSearchService {
 
       return {
         id: source.id || "",
+        refId: source.refId || "",
         mtMessageType: source.mtMessageType || "",
         mxMessageType: source.mxMessageType || "",
         direction: source.direction || "",
@@ -502,6 +504,7 @@ class OpenSearchService {
         const source = hit._source || {};
         return {
           id: source.id,
+          refId: source.refId || "",
           mtMessageType: source.mtMessageType || "",
           mxMessageType: source.mxMessageType || "",
           direction: source.direction || "",
@@ -769,6 +772,7 @@ class OpenSearchService {
         const source = hit._source || {};
         return {
           id: source.id,
+          refId: source.refId || "",
           mtMessageType: source.mtMessageType || "",
           mxMessageType: source.mxMessageType || "",
           direction: source.direction || "",
@@ -873,6 +877,7 @@ class OpenSearchService {
         const source = hit._source || {};
         return {
           id: source.id,
+          refId: source.refId || "",
           mtMessageType: source.mtMessageType || "",
           mxMessageType: source.mxMessageType || "",
           direction: source.direction || "",
@@ -969,6 +974,7 @@ class OpenSearchService {
         const source = hit._source || {};
         return {
           id: source.id,
+          refId: source.refId || "",
           mtMessageType: source.mtMessageType || "",
           mxMessageType: source.mxMessageType || "",
           direction: source.direction || "",
@@ -1181,6 +1187,7 @@ class OpenSearchService {
   ): Promise<
     {
       id: string;
+      refId: string;
       time: string;
       mtMessageType: string;
       status: string;
@@ -1229,6 +1236,7 @@ class OpenSearchService {
 
         return {
           id: msg.id,
+          refId: msg.refId,
           time,
           mtMessageType: msg.mtMessageType,
           status: msg.status,
