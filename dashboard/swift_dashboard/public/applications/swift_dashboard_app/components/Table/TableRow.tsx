@@ -20,6 +20,7 @@ import './Table.scss';
 interface TableRowProps {
   data: {
     id: string;
+    refId: string;
     mtMessageType: string;
     mxMessageType: string;
     currency: string;
@@ -36,6 +37,7 @@ interface TableRowProps {
 const TableRow: React.FC<TableRowProps> = ({ data, onClick }) => {
   return (
     <tr className='tableRow' onClick={onClick}>
+      <td>{data.refId}</td>
       <td>{data.id}</td>
       <td>{data.mtMessageType}</td>
       <td>{data.mxMessageType}</td>

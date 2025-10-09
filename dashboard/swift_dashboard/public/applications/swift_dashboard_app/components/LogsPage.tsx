@@ -48,16 +48,13 @@ function DateRangeFilter({ column, onFilterChange }) {
 
     // Call the parent's handler with the new range
     // We pass the entire object as the filter value
-    const filterToSet =
-      newFilters.dateFrom || newFilters.dateTo ? newFilters : undefined;
+    const filterToSet = newFilters.dateFrom || newFilters.dateTo ? newFilters : undefined;
     onFilterChange(column.id, filterToSet);
   };
 
   return (
-    <div className="date-range-filter"
-    >
+    <div className="date-range-filter">
       <label>
-        From
         <input
           type="date"
           name="dateFrom"
@@ -68,7 +65,6 @@ function DateRangeFilter({ column, onFilterChange }) {
         />
       </label>
       <label>
-        To
         <input
           type="date"
           name="dateTo"
@@ -84,11 +80,32 @@ function DateRangeFilter({ column, onFilterChange }) {
 
 // Default column filter component
 function DefaultColumnFilter({ column, onFilterChange }) {
-  const filterValue = column.getFilterValue();
+  const initialValue = column.getFilterValue() || "";
+  const [value, setValue] = useState(initialValue);
+  // Use a ref to hold the timeout ID
+  const timeoutRef = React.useRef(null);
+  // Synchronize local state with global state (for external changes)
+  React.useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+  // Clean up timeout on unmount
+  React.useEffect(() => {
+    return () => clearTimeout(timeoutRef.current);
+  }, []);
+
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setValue(newValue);
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+        onFilterChange(column.id, newValue); 
+    }, 500); // Wait 500 milliseconds after last keystroke
+  };
+
   return (
     <input
-      value={(filterValue || "") as string}
-      onChange={(e) => onFilterChange(column.id, e.target.value)}
+      value={value as string}
+      onChange={handleChange}
       placeholder={`Filter ${column.columnDef.header}...`}
       className="column-filter-input"
     />
@@ -112,11 +129,16 @@ function LevelFilter({ column, levels, onFilterChange }) {
       className="column-filter-select"
     >
       <option value="ALL">All Levels</option>
-      {levels.map((level) => (
+      <option value="INFO">INFO</option>
+      <option value="WARN">WARN</option>
+      <option value="DEBUG">DEBUG</option>
+      <option value="ERROR">ERROR</option>
+
+      {/* {levels.map((level) => (
         <option key={level} value={level}>
           {level}
         </option>
-      ))}
+      ))} */}
     </select>
   );
 }

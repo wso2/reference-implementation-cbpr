@@ -29,6 +29,7 @@ import './commonStyles.scss';
 // Define TableFilters interface (matches the structure in your Table component)
 export interface TableFilters {
     id: string;
+    refId: string;
     mtMessageType: string;
     mxMessageType: string;
     direction: string;
@@ -76,6 +77,7 @@ const MemoizedTable = memo(Table, (prevProps, nextProps) => {
 const normalizeMessage = (message: any): MessageData => {
     return {
       id: message.id || '',
+      refId: message.refId || '',
       mtMessageType: message.mtMessageType || '',
       mxMessageType: message.mxMessageType || '',
       currency: message.currency || '',
@@ -116,6 +118,7 @@ const MessagesPage: React.FC<{ location: any }> = ({ location }) => {
     // Store the applied table filters that are actually used for filtering
     const [tableFilters, setTableFilters] = useState<TableFilters>({
         id: '',
+        refId: '',
         mtMessageType: '',
         mxMessageType: '',
         direction: '',
@@ -129,6 +132,7 @@ const MessagesPage: React.FC<{ location: any }> = ({ location }) => {
     
     const [pendingFilters, setPendingFilters] = useState<TableFilters>({
         id: '',
+        refId: '',
         mtMessageType: '',
         mxMessageType: '',
         direction: '',
@@ -277,6 +281,7 @@ const MessagesPage: React.FC<{ location: any }> = ({ location }) => {
     const handleClearFilters = useCallback(async () => {
         const emptyFilters = {
             id: '',
+            refId: '',
             mtMessageType: '',
             mxMessageType: '',
             direction: '',
@@ -336,6 +341,7 @@ const MessagesPage: React.FC<{ location: any }> = ({ location }) => {
             try {
                 // Safely access properties with fallbacks
                 const itemId = item.id?.toString().toLowerCase() || '';
+                const itemRefId = item.refId?.toString().toLowerCase() || '';
                 const itemMtType = item.mtMessageType?.toString().toLowerCase() || '';
                 const itemMxType = item.mxMessageType?.toString().toLowerCase() || '';
                 const itemDirection = item.direction || '';
@@ -355,6 +361,7 @@ const MessagesPage: React.FC<{ location: any }> = ({ location }) => {
                 
                 // Now apply the filters
                 const meetsIdFilter = !tableFilters.id || itemId.includes(tableFilters.id.toLowerCase());
+                const meetsRefIdFilter = !tableFilters.refId || itemRefId.includes(tableFilters.refId.toLowerCase());
                 const meetsMtTypeFilter = !tableFilters.mtMessageType || itemMtType.includes(tableFilters.mtMessageType.toLowerCase());
                 const meetsMxTypeFilter = !tableFilters.mxMessageType || itemMxType.includes(tableFilters.mxMessageType.toLowerCase());
                 const meetsDirectionFilter = !tableFilters.direction || itemDirection === tableFilters.direction;
@@ -439,6 +446,7 @@ const MessagesPage: React.FC<{ location: any }> = ({ location }) => {
             
                 return (
                     meetsIdFilter && 
+                    meetsRefIdFilter &&
                     meetsMtTypeFilter && 
                     meetsMxTypeFilter && 
                     meetsDirectionFilter && 

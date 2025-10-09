@@ -23,19 +23,15 @@ $container-bg: #fff;
 $shadow-light: 0 4px 12px rgba(0, 0, 0, 0.05);
 $shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.04);
 $text-color-dark: #333;
-$text-color-medium: #555;
 $border-color-light: #e0e0e0;
 $border-color-medium: #ddd;
 $border-color-dark: #ccc;
 $table-row-even-bg: #f6f6f6;
-$table-row-hover-bg: #eef;
+$table-row-hover-bg: linear-gradient(to left, #2078C2, #1A639F);
 $button-disabled: #cccccc;
 
 .log-table-container {
   font-family: $primary-font;
-  padding: 20px;
-  width: 1300px;
-  margin: 20px auto;
   background-color: $background-color-light;
   border-radius: 8px;
   box-shadow: $shadow-light;
@@ -68,20 +64,24 @@ $button-disabled: #cccccc;
       border-collapse: collapse;
       min-width: 800px;
 
+      thead {
+        background: $table-row-hover-bg;
+        color: white;
+      }
+
       th,
       td {
         border: 1px solid $border-color-light;
         padding: 12px 15px;
-        text-align: left;
         font-size: 14px;
         vertical-align: top;
       }
 
       th {
-        background-color: #f2f2f2;
         font-weight: bold;
-        color: $text-color-medium;
         position: relative;
+        width: 100%;
+        table-layout: fixed;
 
         .column-filter {
           margin-top: 8px;
@@ -99,13 +99,19 @@ $button-disabled: #cccccc;
         }
       }
 
+      th:nth-child(1) { width: 15%; }
+      th:nth-child(2) { width: 10%; } 
+      th:nth-child(3) { width: 25%; }
+      th:nth-child(4) { width: 40%; }
+
       tr {
         &:nth-child(even) {
           background-color: $table-row-even-bg;
         }
 
         &:hover {
-          background-color: $table-row-hover-bg;
+          background: $table-row-hover-bg;
+          color: #fff;
         }
       }
     }
@@ -175,7 +181,6 @@ $button-disabled: #cccccc;
   input[type="date"] {
     padding: 1px;
     margin-top: 3px;
-    width: 4.2rem;
-    font-size: 9px;
+    width: 5rem;
   }
 }

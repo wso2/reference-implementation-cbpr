@@ -25,18 +25,19 @@ import ballerina/uuid;
 
 # Handle error scenarios for FTP client and listener operations
 #
-# + ftpClient - FtpClient instance to interact with the FTP server
-# + listenerName - Name of the listener for logging purposes
-# + logId - log identifier for tracking the operation
-# + incomingMsg - the incoming message that caused the error
-# + errorMsg - the error encountered during the operation
-# + fileId - identifier for the file being processed
-# + direction - direction of the message (inward or outward)
+# + ftpClient - FtpClient instance to interact with the FTP server  
+# + listenerName - Name of the listener for logging purposes  
+# + logId - log identifier for tracking the operation  
+# + incomingMsg - the incoming message that caused the error  
+# + errorMsg - the error encountered during the operation  
+# + fileId - identifier for the file being processed  
+# + direction - direction of the message (inward or outward)  
+# + refId - reference id
 function handleError(FtpClient ftpClient, string listenerName, string logId, string incomingMsg, error errorMsg,
-        string fileId, string direction) {
+        string fileId, string direction, string refId) {
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message translation failed. Sending to FTP.`);
     sendToSourceFTP(ftpClient, logId, FAILURE, incomingMsg, fileId);
-    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId,
+    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = UNKNOWN, mxMsgType = UNKNOWN, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, errorMsg = errorMsg.toBalString(), status = FAILED);
     cleanTempFile(fileId, logId, listenerName);
@@ -45,25 +46,26 @@ function handleError(FtpClient ftpClient, string listenerName, string logId, str
 
 # Handle scenarios where the message translation is skipped.
 #
-# + sourceClient - source FtpClient instance to interact with the source FTP server
-# + destinationClient - destination FtpClient instance to interact with the destination FTP server
-# + listenerName - listener name for logging purposes
-# + logId - log id
-# + incomingMsg - incoming message that is being skipped
-# + fileId - identifier for the file being processed
-# + direction - direction of message (inward or outward)
-# + mtmsgType - message type of the MT message
-# + mxMsgType - message type of the MX message
+# + sourceClient - source FtpClient instance to interact with the source FTP server  
+# + destinationClient - destination FtpClient instance to interact with the destination FTP server  
+# + listenerName - listener name for logging purposes  
+# + logId - log id  
+# + incomingMsg - incoming message that is being skipped  
+# + fileId - identifier for the file being processed  
+# + direction - direction of message (inward or outward)  
+# + refId - reference id
+# + mtmsgType - message type of the MT message  
+# + mxMsgType - message type of the MX message  
 # + extension - file extension for storing the skipped message
-function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string listenerName, string logId, 
-    string incomingMsg, string fileId, string direction, string mtmsgType = NOT_AVAILABLE, 
-    string mxMsgType = NOT_AVAILABLE, string extension = "") {
+function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string listenerName, string logId,
+        string incomingMsg, string fileId, string direction, string refId, string mtmsgType = NOT_AVAILABLE,
+        string mxMsgType = NOT_AVAILABLE, string extension = "") {
 
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message type is not supported.
         Skipping message translation.`);
     sendToSourceFTP(sourceClient, logId, SKIP, incomingMsg, fileId);
     sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId, false, extension);
-    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId,
+    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, status = SKIPPED);
     cleanTempFile(fileId, logId, listenerName);
@@ -72,27 +74,28 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
 
 # Handle successful message translation and sending to FTP servers.
 #
-# + sourceClient - source FtpClient instance to interact with the source FTP server
-# + destinationClient - destination Ftp Client instance to interact with the destination FTP server
-# + listenerName - listener name for logging purposes
-# + logId - log id
-# + incomingMsg - incoming message
-# + translatedMsg - translated message
-# + fileId - file identifier for the message being processed 
-# + direction - direction of the message (inward or outward)
-# + mtmsgType - mt message type
-# + mxMsgType - mx message type
-# + currency - currency of transaction
+# + sourceClient - source FtpClient instance to interact with the source FTP server  
+# + destinationClient - destination Ftp Client instance to interact with the destination FTP server  
+# + listenerName - listener name for logging purposes  
+# + logId - log id  
+# + incomingMsg - incoming message  
+# + translatedMsg - translated message  
+# + fileId - file identifier for the message being processed  
+# + direction - direction of the message (inward or outward)  
+# + refId - reference id
+# + mtmsgType - mt message type  
+# + mxMsgType - mx message type  
+# + currency - currency of transaction  
 # + amount - amount of transaction
-function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, string listenerName, string logId, 
-        string incomingMsg, string|xml translatedMsg, string fileId, string direction, string mtmsgType, string mxMsgType, 
-        string currency = NOT_AVAILABLE, string amount = NOT_AVAILABLE) {
+function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, string listenerName, string logId,
+        string incomingMsg, string|xml translatedMsg, string fileId, string direction, string refId, string mtmsgType,
+        string mxMsgType, string currency = NOT_AVAILABLE, string amount = NOT_AVAILABLE) {
 
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message translated successfully. Sending to FTP.`);
     sendToSourceFTP(sourceClient, logId, SUCCESS, incomingMsg, fileId);
     sendToDestinationFTP(destinationClient, logId, translatedMsg, fileId);
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg.toBalString(), msgId = fileId,
-            direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = currency,
+            refId = refId, direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = currency,
             amount = amount, status = SUCCESSFUL);
     cleanTempFile(fileId, logId, listenerName);
     return;
@@ -104,6 +107,7 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
 # + orgnlMessage - original message
 # + translatedMessage - translated message
 # + msgId - message id
+# + refId - reference id
 # + direction - direction of the message (inward or outward)
 # + mtmsgType - MT message type
 # + mxMsgType - MX message type
@@ -112,8 +116,8 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
 # + errorMsg - error message
 # + status - status of the operation (successful, failed, skipped)
 function appendToDashboardLogs(string listenerName, string orgnlMessage, string translatedMessage, string msgId, 
-    string direction, string mtmsgType, string mxMsgType, string currency, string amount, string errorMsg = "", 
-    string status = SUCCESSFUL) {
+        string refId, string direction, string mtmsgType, string mxMsgType, string currency, string amount, 
+        string errorMsg = "", string status = SUCCESSFUL) {
 
     // Create values for the JSON object
     time:Utc currentTime = time:utcNow();
@@ -124,6 +128,7 @@ function appendToDashboardLogs(string listenerName, string orgnlMessage, string 
     // Create the JSON log entry
     json logEntry = {
         "id": msgId,
+        "refId": refId,
         "mtMessageType": mtmsgType,
         "mxMessageType": mxMsgType,
         "currency": currency,
@@ -395,4 +400,19 @@ function toXmlString(xml message) returns string {
         return message.toString();
     }
     return string `<?xml version="1.0" encoding="UTF-8"?>${message.toString()}`;
+}
+
+function extractRefId(json? mtMsgBlock4, xml? mxMsg) returns string {
+
+    string refId = UNKNOWN;
+    if mtMsgBlock4 is json && mtMsgBlock4?.MT20?.msgId?.content is string {
+        json|error id = mtMsgBlock4?.MT20?.msgId?.content;
+        if id is json {
+            refId = id.toString();
+        }
+    }
+    if refId == UNKNOWN && mxMsg is xml {
+        refId = (mxMsg/**/<head:BizMsgIdr>).data();
+    }
+    return refId;
 }
