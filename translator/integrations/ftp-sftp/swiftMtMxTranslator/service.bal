@@ -63,15 +63,6 @@ public function main() returns error? {
             return error("Error occurred while creating the FTP listener");
         }
     }
-
-    // if mtClient.enable {
-    //     mtFileClient = getMtClient();
-    // }
-
-    // if mxClient.enable {
-    //     mxFileClient = getMxClient();
-    // }
-
 }
 
 service /healthz on new http:Listener(8080) {
