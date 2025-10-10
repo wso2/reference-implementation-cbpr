@@ -63,7 +63,7 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
     if swiftMessage is error {
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while pre-processing MT message.`,
                 err = swiftMessage.toBalString());
-        handleError(mtMxClientObj, mtMxListenerName, logId, incomingMsg, swiftMessage, fileName, INWARD);
+        handleError(mtMxClientObj, mtMxListenerName, logId, incomingMsg, swiftMessage, fileName, INWARD, UNKNOWN);
         return;
     }
 
@@ -74,7 +74,7 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
         // Unsupported messages are treated as skipped messages. 
         // If required, this can be configured to treat as a failure by configuring the 
         // skippedFilepath in the configurables.
-        handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, 
+        handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, UNKNOWN,
             extension = fileExtension);
         return;
     }
@@ -82,13 +82,13 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
     record {}|error parsedMsg = swiftmt:parse(swiftMessage);
     if parsedMsg is error {
         if parsedMsg.message() == UNSUPPORTED_MT_MSG_ERROR {
-            handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, 
+            handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, UNKNOWN,
                 extension = fileExtension);
             return;
         }
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while parsing MT message. 
                     Invalid MT message.`, parsedMsg);
-        handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, parsedMsg, fileName, OUTWARD);
+        handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, parsedMsg, fileName, OUTWARD, UNKNOWN);
         return;
     }
     log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] MT message parsed successfully.`);
@@ -99,13 +99,18 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
         record {} block2 = <record {}>parsedMsg[BLOCK2];
         msgType = block2[MESSAGE_TYPE] is string ? block2[MESSAGE_TYPE].toString() : "";
     }
+    string refId = "Unknown";
+    if parsedMsg[BLOCK4] is record{} {
+        json block4 = <json>parsedMsg[BLOCK4];
+        refId = extractRefId(block4, ());
+    }
     if msgType == "" {
         log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Parsed MT message: 
                 ${parsedMsg.toBalString()}`);
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Invalid MT message type.`,
                 error("Invalid MT message type."));
         handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, error("Invalid MT message type."),
-                fileName, OUTWARD);
+                fileName, OUTWARD, refId);
         return;
     }
 
@@ -123,7 +128,7 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
             if mxMsgType is error {
                 log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while retrieving MX message type.`,
                         err = mxMsgType.toBalString());
-                handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, mxMsgType, fileName, OUTWARD);
+                handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, mxMsgType, fileName, OUTWARD, refId);
                 return;
             }
             log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] MT ${msgType} message translated to 
@@ -135,25 +140,25 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
             if postProcessedMsg is error {
                 log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while post-processing the 
                     translated message.`, err = postProcessedMsg.toBalString());
-                handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, postProcessedMsg, fileName, OUTWARD);
+                handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, postProcessedMsg, fileName, OUTWARD, 
+                    refId);
                 return;
             }
             handleSuccess(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage,
                     postProcessedMsg is xml ? toXmlString(postProcessedMsg) : postProcessedMsg, 
-                    fileName, OUTWARD, mtMsgType, mxMsgType, msgCcy, msgAmnt);
+                    fileName, OUTWARD, refId, mtMsgType, mxMsgType, msgCcy, msgAmnt);
         } else {
             // If the translation fails, log the error and send the original message to the failed directory.
             log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while translating MT message to MX.`,
                     err = translatedMsg.toBalString());
-            handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, translatedMsg, fileName,
-                    OUTWARD);
+            handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, translatedMsg, fileName, OUTWARD, refId);
             return;
         }
     } else {
         // If the message type is not supported, log the message and send it to the skip directory.
         log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Message type is ${msgType}. 
             Translator is not engaged for this message type.`);
-        handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, 
+        handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, refId,
             extension = fileExtension);
 
     }

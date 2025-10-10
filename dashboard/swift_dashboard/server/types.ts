@@ -56,6 +56,7 @@ export interface PluginContext {
 // Type for message documents from OpenSearch
 export interface MessageDocument {
   id: string;
+  refId: string;
   mtMessageType: string;
   mxMessageType: string;
   direction: string;

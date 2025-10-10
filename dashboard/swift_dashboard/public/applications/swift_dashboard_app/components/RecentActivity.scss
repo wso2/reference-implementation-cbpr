@@ -31,6 +31,7 @@
     overflow: hidden; /* Hide content that exceeds cell width */
     text-overflow: ellipsis; /* Show "..." for overflowed text */
     white-space: nowrap; /* Prevent text from wrapping within cells */
+    vertical-align: text-bottom;
   }
   
 /* Styles for table headers */

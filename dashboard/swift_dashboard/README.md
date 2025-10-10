@@ -119,7 +119,7 @@ yarn osd bootstrap
 #### Install Plugin Dependencies
 
 ```bash
-cd plugins/swift-dashboard  # Your plugin directory
+cd plugins/swift_dashboard  # Your plugin directory
 yarn install
 ```
 

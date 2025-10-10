@@ -95,3 +95,4 @@ enum status {
 }
 
 const UNSUPPORTED_MT_MSG_ERROR = "SWIFT message type is invalid or not supported.";
+xmlns "urn:iso:std:iso:20022:tech:xsd:head.001.001.02" as head;
