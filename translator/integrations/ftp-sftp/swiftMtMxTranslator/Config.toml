@@ -1,6 +1,7 @@
 # Configurables for the MT->MX FTP listener
 [mtMxListener]
 name = "MT MX Listener 1"
+enable = true
 # Protocol can be "ftp" or "sftp"
 protocol = "ftp"
 host = "127.0.0.1"
@@ -17,10 +18,10 @@ inwardFilepath = "/mt/inward/"
 # Pattern to match incoming file names
 inwardFileNamePattern = "(.*).txt"
 
-# Uncomment the following section if you want to change the MT MX Client configuration
-# Configurables for the MT->MX FTP client (used to send files)
-[mtMxClient]
+# Configurables for the MT Server client (used to send files)
+[mtClient]
 name = "MT MX Client 1"
+enable = true
 protocol = "ftp"
 host = "127.0.0.1"
 port = 23
@@ -29,17 +30,18 @@ password = "admin"
 pvtKeyPath = ""
 keyPass = ""
 # Directory where original MT messages are moved after successful processing
-successFilepath = "/mt/success/"
+bkpSuccessFilepath = "/mt/success/"
 # Directory where original MT messages are moved after failed processing
-failedFilepath = "/mt/failed/"
+bkpFailedFilepath = "/mt/failed/"
 # Directory where original MT messages are moved if processing skipped
-skippedFilepath = "/mt/skipped/"
+bkpSkippedFilepath = "/mt/skipped/"
 # Directory where translated MT files are moved
 outwardFilepath = "/mt/outward/"
 outputFileNamePattern = ".fin"
 
 # Configurables for the MX->MT FTP listener
 [mxMtListener]
+enable = true
 name = "MX MT Listener 1"
 # Protocol can be "ftp" or "sftp"
 protocol = "ftp"
@@ -55,13 +57,12 @@ pollingInterval = 1.0
 # Directory where incoming MX files are placed
 inwardFilepath = "/mx/inward/"
 # Pattern to match incoming file names
-inwardFileNamePattern = "(.*).txt"
+inwardFileNamePattern = "(.*).ia|(.*).xml"
 
-
-# Uncomment the following section if you want to change the MX MT Client configuration
-# Configurables for the MX->MT FTP client (used to send files)
-[mxMtClient]
+# Configurables for the MX Server client (used to send files)
+[mxClient]
 name = "MX MT Client 1"
+enable = true
 # Protocol can be "ftp" or "sftp"
 protocol = "ftp"
 host = "127.0.0.1"
@@ -71,11 +72,11 @@ password = "admin"
 pvtKeyPath = ""
 keyPass = ""
 # Directory where original MX messages are moved after successful processing
-successFilepath = "/mx/success/"
+bkpSuccessFilepath = "/mx/success/"
 # Directory where original MX messages are moved after failed processing
-failedFilepath = "/mx/failed/"
+bkpFailedFilepath = "/mx/failed/"
 # Directory where original MX messages are moved if processing skipped
-skippedFilepath = "/mx/skipped/"
+bkpSkippedFilepath = "/mx/skipped/"
 # Directory where translated MX files are moved
 outwardFilepath = "/mx/outward/"
 outputFileNamePattern = ".xml"
@@ -106,4 +107,3 @@ basepath = "http://localhost:9090"
 preProcess = true
 postProcess = true
 basepath = "http://localhost:9090"
-

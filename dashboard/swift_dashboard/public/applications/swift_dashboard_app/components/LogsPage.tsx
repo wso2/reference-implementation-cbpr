@@ -134,11 +134,6 @@ function LevelFilter({ column, levels, onFilterChange }) {
       <option value="DEBUG">DEBUG</option>
       <option value="ERROR">ERROR</option>
 
-      {/* {levels.map((level) => (
-        <option key={level} value={level}>
-          {level}
-        </option>
-      ))} */}
     </select>
   );
 }

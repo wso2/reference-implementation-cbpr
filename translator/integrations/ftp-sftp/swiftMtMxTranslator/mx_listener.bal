@@ -22,7 +22,7 @@ import ballerinax/financial.iso20022ToSwiftmt as mxToMt;
 import ballerinax/financial.swift.mt as swiftmt;
 
 // MT->MX Translator service
-service on mxFileListener {
+ftp:Service mxFileListenerService = service object {
 
     remote function onFileChange(ftp:WatchEvent & readonly event, ftp:Caller caller) returns error? {
 
@@ -32,8 +32,6 @@ service on mxFileListener {
             log:printInfo(string `[Listner - ${mxMtListenerName}][${logId}] File received: ${addedFile.name}`);
             // Get the newly added file from the SFTP server as a `byte[]` stream.
             stream<byte[] & readonly, io:Error?> fileStream = check caller->get(addedFile.pathDecoded);
-            // Delete the file from the SFTP server after reading.
-            check caller->delete(addedFile.pathDecoded);
 
             // copy to local file system
             check io:fileWriteBlocksFromStream(string `/tmp/swiftTranslator/${addedFile.name}`, fileStream);
@@ -44,23 +42,22 @@ service on mxFileListener {
 
             log:printDebug(string `[Listner - ${mxMtListenerName}][${logId}] Incoming message: ${inMsg}`);
 
+            // Delete the file from the SFTP server after reading.
+            check caller->delete(addedFile.pathDecoded);
+
             // Identify if the incoming message is an ISO20022 message.
             if mtRegex.isFullMatch(inMsg) {
                 // Incoming message is a SWIFT MT message. Do not process it.
                 log:printInfo(string `[Listner - ${mxMtListenerName}] Incoming message is a SWIFT MT message. 
                     Skipping processing.`);
-                handleSkip(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, addedFile.name, INWARD);
+                handleSkip(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, addedFile.name, INWARD, 
+                    addedFile.extension);
                 return;
             }
             handleMxMtTranslation(inMsg, addedFile.name, logId);
         }
     }
-
-    function init() {
-        log:printInfo(string `[Listner - ${mxMtListenerName}] Listener started.`);
-
-    }
-}
+};
 
 // Handle the translation of MX to MT messages.
 function handleMxMtTranslation(string inMsg, string fileName, string logId) {
