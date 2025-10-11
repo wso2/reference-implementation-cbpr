@@ -2,6 +2,8 @@
   "name": "swift-dashboard-backend-server",
   "version": "1.0.0",
   "description": "Server for Swift Dashboard",
+  "author": "WSO2",
+  "license": "Apache-2.0",
   "main": "dist/app.js",
   "scripts": {
     "start": "ts-node src/app.ts",

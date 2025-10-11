@@ -20,7 +20,8 @@ import { PluginContext, MessageDocument, LogDocument } from "../types";
 
 class OpenSearchService {
   private context: PluginContext;
-  private index: string | undefined;
+  private messageIndex: string;
+  private logIndex: string;
   // Todo - Cache for messages to avoid frequent queries
   private cachedMessages: MessageDocument[] | null = null;
   private cachedLogs: LogDocument[] | null = null;
@@ -29,7 +30,8 @@ class OpenSearchService {
 
   constructor(context: PluginContext) {
     this.context = context;
-    this.index = context.config?.index || env.OPENSEARCH_INDEX;
+    this.messageIndex = env.OPENSEARCH_INDEX_NAME_MESSAGE || "translated_log";
+    this.logIndex = env.OPENSEARCH_INDEX_NAME_LOG || "ballerina_log";
     this.cacheTTL = context.config?.cacheTTL || 5 * 60 * 1000; // Default 5 minutes
   }
 
@@ -37,10 +39,13 @@ class OpenSearchService {
    * Get the total count of documents in the messages index
    * @returns Total number of documents in the index
    */
-  public async getDocumentCount(client: OpenSearchClient): Promise<number> {
+  public async getDocumentCount(
+    client: OpenSearchClient, 
+    index: string = this.messageIndex
+  ): Promise<number> {
     try {
       const response = await client.count({
-        index: this.index,
+        index: index,
       });
 
       const count = response.body.count;
@@ -119,7 +124,7 @@ class OpenSearchService {
       }
 
       const response = await client.search({
-        index: this.index,
+        index: this.messageIndex,
         body: {
           size: count,
           query: query,
@@ -173,7 +178,7 @@ class OpenSearchService {
   ): Promise<LogDocument[]> {
     const now = Date.now();
 
-    const count = await this.getDocumentCount(client);
+    const count = await this.getDocumentCount(client, this.logIndex);
 
     // Build the range query dynamically
     const rangeQuery: any = {};
@@ -208,7 +213,7 @@ class OpenSearchService {
           },
         };
     const response = await client.search({
-      index: "ballerina_log",
+      index: this.logIndex,
       body: {
         size: count,
         query: query,
@@ -245,7 +250,7 @@ class OpenSearchService {
   public async getMessageById(client: OpenSearchClient, id: string) {
     try {
       const response = await client.search({
-        index: this.index,
+        index: this.messageIndex,
         body: {
           query: {
             term: {
@@ -486,7 +491,7 @@ class OpenSearchService {
             };
 
       const response = await client.search({
-        index: this.index,
+        index: this.messageIndex,
         body: {
           size: count,
           query: query,
@@ -754,7 +759,7 @@ class OpenSearchService {
       }
 
       const response = await client.search({
-        index: this.index,
+        index: this.messageIndex,
         body: {
           size: count,
           query: query,
@@ -859,7 +864,7 @@ class OpenSearchService {
       }
 
       const response = await client.search({
-        index: this.index,
+        index: this.messageIndex,
         body: {
           size: count,
           query: query,
@@ -956,7 +961,7 @@ class OpenSearchService {
       }
 
       const response = await client.search({
-        index: this.index,
+        index: this.messageIndex,
         body: {
           size: count,
           query: query,

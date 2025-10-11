@@ -42,7 +42,6 @@ export class SwiftDashboardServerPlugin implements Plugin<SwiftDashboardServerPl
       logger: this.logger,
       config: {
         enabled: true,
-        index: 'translated_log', // Default index name
         cacheTTL: 5 * 60 * 1000 // 5 minutes in milliseconds
       }
     };
