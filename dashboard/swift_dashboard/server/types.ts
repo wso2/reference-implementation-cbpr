@@ -47,7 +47,6 @@ export interface PluginContext {
   logger: Logger;
   config?: {
     enabled: boolean;
-    index: string;
     cacheTTL?: number;
     [key: string]: any; // For any additional config properties
   };

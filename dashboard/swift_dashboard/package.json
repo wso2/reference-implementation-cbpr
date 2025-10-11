@@ -2,6 +2,8 @@
   "name": "swift-dashboard",
   "version": "1.0.1",
   "description": "SWIFT Dashboard for OpenSearch",
+  "author": "WSO2",
+  "license": "Apache-2.0",
   "main": "target/public",
   "scripts": {
     "build": "yarn node ../../scripts/plugin_helpers build",
