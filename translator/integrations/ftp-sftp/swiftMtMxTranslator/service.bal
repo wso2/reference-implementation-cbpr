@@ -23,7 +23,7 @@ import ballerina/time;
 public function main() returns error? {
     time:Utc utc = time:utcNow();
     string date = time:utcToString(utc).substring(0, 10);
-    string filePath = log.ballerinaLogFilePath + "/ballerina" + date + ".log";
+    string filePath = log.ballerinaLogFilePath + "/ballerina-" + date + ".log";
     log:Error? outputFile = log:setOutputFile(filePath, log:APPEND);
     if outputFile is log:Error {
         log:printWarn(string `[Listner - ${mtMxListenerName}] Failed to set the output file for ballerina log.`);
