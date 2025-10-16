@@ -101,14 +101,10 @@ jobs:
           RELEASE_DIR="release/swift-mt-mx-translator-${{ steps.get_version.outputs.version }}"
           
           # Copy JAR file from build location
-          cp ${{ env.PROJECT_PATH }}/target/bin/*.jar ${RELEASE_DIR}/
+          cp ${{ env.PROJECT_PATH }}/target/bin/swiftMtMxTranslator.jar ${RELEASE_DIR}/swiftMtMxTranslator-${{ steps.get_version.outputs.version }}.jar
           
           # Copy configuration files
           cp ${{ env.PROJECT_PATH }}/Config.toml ${RELEASE_DIR}/Config.sample.toml
-          
-          # Copy source files for reference
-          mkdir -p ${RELEASE_DIR}/src
-          cp ${{ env.PROJECT_PATH }}/*.bal ${RELEASE_DIR}/src/
           
           # Create README
           cat > ${RELEASE_DIR}/README.md << 'EOF'
