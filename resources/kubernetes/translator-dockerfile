@@ -1,0 +1,12 @@
+# Use a lightweight OpenJDK runtime image
+FROM eclipse-temurin:17-jre-focal
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the two JAR files into the container
+COPY swiftMtMxTranslator.jar /app/swiftMtMxTranslator.jar
+COPY extensions.jar /app/extensions.jar
+
+# Define an entrypoint, though the Deployment will override the command
+ENTRYPOINT ["java", "-jar"]
