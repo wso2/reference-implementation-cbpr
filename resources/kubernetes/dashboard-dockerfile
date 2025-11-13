@@ -1,0 +1,16 @@
+# Start from the base image used in your Kubernetes YAML
+FROM opensearchproject/opensearch-dashboards:2.19.0
+
+# Define the installation directory
+WORKDIR /usr/share/opensearch-dashboards
+
+# Copy the plugin ZIP into the container
+COPY swift-dashboard-1.0.0.zip ./swift-dashboard.zip
+
+# Install the plugin and remove the ZIP file
+# Note: The 'opensearch-dashboards-plugin install' command should be used.
+# The trailing '&' is often used to ensure the command runs in the background.
+RUN bin/opensearch-dashboards-plugin install file:///usr/share/opensearch-dashboards/swift-dashboard.zip \
+    && rm swift-dashboard.zip
+
+# The ENTRYPOINT and CMD are inherited from the base image
