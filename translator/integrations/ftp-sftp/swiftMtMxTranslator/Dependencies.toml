@@ -285,7 +285,7 @@ dependencies = [
 [[package]]
 org = "ballerina"
 name = "regex"
-version = "1.4.3"
+version = "1.3.2"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "lang.string"}
@@ -402,7 +402,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "financial.swiftmtToIso20022"
-version = "1.0.4"
+version = "2.0.0"
 dependencies = [
 	{org = "ballerina", name = "data.xmldata"},
 	{org = "ballerina", name = "io"},
@@ -421,7 +421,7 @@ modules = [
 [[package]]
 org = "wso2"
 name = "swiftMtMxTranslator"
-version = "1.0.2"
+version = "2.0.0"
 dependencies = [
 	{org = "ballerina", name = "file"},
 	{org = "ballerina", name = "ftp"},
