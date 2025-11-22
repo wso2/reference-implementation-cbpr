@@ -22,7 +22,6 @@ import ballerina/regex;
 import ballerina/time;
 import ballerina/uuid;
 
-
 # Handle error scenarios for FTP client and listener operations
 #
 # + ftpClient - FtpClient instance to interact with the FTP server  
@@ -63,9 +62,25 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
 
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message type is not supported.
         Skipping message translation.`);
-    sendToSourceFTP(sourceClient, logId, SKIP, incomingMsg, fileId);
-    sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId, false, extension);
-    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
+
+    // Post-process the skipped MT or MX message if the extension is enabled.
+    string|error postProcessedMsg;
+    if direction == OUTWARD {
+        postProcessedMsg = postProcessSkippedMtMxMessage(incomingMsg, logId);
+    } else {
+        postProcessedMsg = postProcessSkippedMxMtMessage(incomingMsg, logId);
+    }
+
+    if postProcessedMsg is error {
+        log:printError(string `[Listner - ${listenerName}][${logId}] Error while post-processing skipped message.`,
+                err = postProcessedMsg.toBalString());
+        handleError(sourceClient, listenerName, logId, incomingMsg, postProcessedMsg, fileId, direction, refId);
+        return;
+    }
+
+    sendToSourceFTP(sourceClient, logId, SKIP, postProcessedMsg, fileId);
+    sendToDestinationFTP(destinationClient, logId, postProcessedMsg, fileId, false, extension);
+    appendToDashboardLogs(listenerName, postProcessedMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, status = SKIPPED);
     cleanTempFile(fileId, logId, listenerName);
@@ -115,8 +130,8 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
 # + amount - amount of the transaction
 # + errorMsg - error message
 # + status - status of the operation (successful, failed, skipped)
-function appendToDashboardLogs(string listenerName, string orgnlMessage, string translatedMessage, string msgId, 
-        string refId, string direction, string mtmsgType, string mxMsgType, string currency, string amount, 
+function appendToDashboardLogs(string listenerName, string orgnlMessage, string translatedMessage, string msgId,
+        string refId, string direction, string mtmsgType, string mxMsgType, string currency, string amount,
         string errorMsg = "", string status = SUCCESSFUL) {
 
     // Create values for the JSON object

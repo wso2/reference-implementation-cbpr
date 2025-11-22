@@ -119,13 +119,15 @@ string[] & readonly supportedMTMessageTypes = [
 const Extension mtMxExtension = {
     preProcess: false,
     postProcess: false,
+    skippedMsgPostProcess: false,
     basepath: "http://localhost:9090"
 };
 
 const Extension mxMtExtension = {
     basepath: "http://localhost:9090",
     preProcess: false,
-    postProcess: false
+    postProcess: false,
+    skippedMsgPostProcess: false
 };
 
 configurable Translator translator = {
