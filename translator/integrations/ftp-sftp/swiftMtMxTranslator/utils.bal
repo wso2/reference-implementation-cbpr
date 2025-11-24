@@ -14,7 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/file;
 import ballerina/ftp;
 import ballerina/io;
 import ballerina/log;

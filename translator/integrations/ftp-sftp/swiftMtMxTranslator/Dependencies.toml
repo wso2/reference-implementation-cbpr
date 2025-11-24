@@ -65,9 +65,6 @@ dependencies = [
 	{org = "ballerina", name = "os"},
 	{org = "ballerina", name = "time"}
 ]
-modules = [
-	{org = "ballerina", packageName = "file", moduleName = "file"}
-]
 
 [[package]]
 org = "ballerina"
@@ -423,7 +420,6 @@ org = "wso2"
 name = "swiftMtMxTranslator"
 version = "2.0.3"
 dependencies = [
-	{org = "ballerina", name = "file"},
 	{org = "ballerina", name = "ftp"},
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
