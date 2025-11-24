@@ -57,7 +57,8 @@ configurable ClientConfig mtClient = {
     bkpSkippedFilepath: "/mt/skipped/",
     // Directory where translated MT files are moved
     outwardFilepath: "/mt/outward/",
-    outputFileNamePattern: ".xml"
+    outputFileNamePattern: ".xml",
+    skippedOutputFileNamePattern : ".fin"
 };
 
 # Configurables for the MX->MT FTP listener
@@ -99,7 +100,8 @@ configurable ClientConfig mxClient = {
     bkpSkippedFilepath: "/mx/skipped/",
     // Directory where translated MX files are moved
     outwardFilepath: "/mx/outward/",
-    outputFileNamePattern: ".fin"
+    outputFileNamePattern: ".fin",
+    skippedOutputFileNamePattern : ".xml"
 };
 
 # Configurables for logging

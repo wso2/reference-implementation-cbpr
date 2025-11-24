@@ -259,9 +259,16 @@ function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml mess
 
         string:RegExp separator = re `\.`;
         string fileId = msgId != "" ? separator.split(msgId)[0] : logId;
-        string extension = fileExtension != "" ? fileExtension : ftpClient.clientConfig.outputFileNamePattern;
-        string outputFileName = translated ? string `${directory}/${fileId}_${fileSuffix}${extension}` :
-            string `${directory}/${fileId}.${extension}`;
+        string extension;
+        string outputFileName;
+        if translated {
+            extension = fileExtension != "" ? fileExtension : ftpClient.clientConfig.outputFileNamePattern;
+            outputFileName = string `${directory}/${fileId}_${fileSuffix}${extension}`;
+        } else{
+            // not translated message (assumed to be skipped message)
+            extension = fileExtension != "" ? string `.${fileExtension}` : ftpClient.clientConfig.skippedOutputFileNamePattern;
+            outputFileName = string `${directory}/${fileId}${extension}`;
+        }
 
         ftp:Error? ftpWrite = ('client)->put(outputFileName, message);
         if ftpWrite is ftp:Error {
