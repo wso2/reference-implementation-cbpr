@@ -22,32 +22,120 @@ A comprehensive OpenSearch-based dashboard for monitoring and analyzing SWIFT MT
 
 **💡 Only need OpenSearch 2.19.0+ and basic setup!**
 
-```bash
-# Quick setup (Coming Soon - Plugin will be included in releases)
-# 1. Download OpenSearch + Dashboards and Fluent-bit
-# 2. Extract dashboard plugin from release
-# 3. Install plugin
-# 4. Configure and run
-```
----
-
 ## 🏗️ Architecture
 
+The dashboard supports **dual data sources** - Moesif Analytics (default) and OpenSearch:
+
 ```
-┌─────────────────────┐    ┌─────────────────────┐    ┌───────────────────────────┐
-│   Integration       │───▶│     OpenSearch      │───▶│   Dashboard UI            │
-│   JSON Logs         │    │     Indexing        │    │   (React Plugin)          │
-├─────────────────────┤    ├─────────────────────┤    ├───────────────────────────┤
-│ • FTP/SFTP          │    │ • Message Index     │    │ • Analytics Views         │
-│ • MQ (planned)      │    │ • Log Index         │    │ • Search Interface        │
-│ • REST (planned)    │    │                     │    │ • Translation comparison  │
-│                     │    │                     │    │ • Log monitoring          │
-└─────────────────────┘    └─────────────────────┘    └───────────────────────────┘
+┌─────────────────────┐    ┌──────────────────────────┐    ┌───────────────────────────┐
+│   Integration       │───▶│   Data Sources           │───▶│   Dashboard UI            │
+│   JSON Logs         │    │   (Configurable)         │    │   (React Plugin)          │
+├─────────────────────┤    ├──────────────────────────┤    ├───────────────────────────┤
+│ • FTP/SFTP          │    │ • Moesif Analytics       │    │ • Analytics Views         │
+│ • MQ (planned)      │    │   (default)              │    │ • Search Interface        │
+│ • REST (planned)    │    │   - Actions API          │    │ • Translation comparison  │
+│                     │    │   - Event Search         │    │ • Log monitoring          │
+│                     │    │ • OpenSearch             │    │ • Error analysis          │
+│                     │    │   - Message Index        │    │                           │
+│                     │    │   - Log Index            │    │                           │
+└─────────────────────┘    └──────────────────────────┘    └───────────────────────────┘
 ```
+
+### Data Source Selection
+- **Moesif** (default): API-first analytics platform for observability
+- **OpenSearch**: Traditional log aggregation via Fluent Bit
 
 ## 🚀 Quick Start
 
-### Production Deployment (Recommended)
+The dashboard supports two data sources. Choose the setup guide based on your preference:
+
+- **[Option 1: Moesif Analytics Setup](#option-1-moesif-analytics-setup-recommended)** - Quick setup with managed analytics (Recommended)
+- **[Option 2: OpenSearch Setup](#option-2-opensearch-setup)** - Self-hosted with full control
+
+---
+
+## Option 1: Moesif Analytics Setup (Recommended)
+
+**Why Moesif?**
+- ✅ No infrastructure to maintain
+- ✅ Quick setup (< 5 minutes)
+- ✅ Built-in analytics and user tracking
+- ✅ Generous free tier
+
+**Prerequisites:**
+- OpenSearch Dashboards 2.19.0+
+- Moesif account ([Sign up free](https://www.moesif.com/))
+
+**Setup Steps:**
+
+1. **Download OpenSearch Dashboards**
+   ```bash
+   # Download OpenSearch Dashboards 2.19.0
+   wget https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/2.19.0/opensearch-dashboards-2.19.0-linux-x64.tar.gz
+   tar -xzf opensearch-dashboards-2.19.0-linux-x64.tar.gz
+   cd opensearch-dashboards-2.19.0
+   ```
+
+2. **Get Moesif API Key**
+   - Sign up at [moesif.com](https://www.moesif.com/)
+   - Create a new application
+   - Navigate to **API Keys** in the Moesif dashboard
+   - Copy your **Management API Key** (used for querying data)
+
+3. **Install SWIFT Analytics Dashboard Plugin**
+   ```bash
+   # Download the latest release
+   # Visit: https://github.com/wso2/reference-implementation-cbpr/releases?q=Dashboard+Plugin
+   
+   # Install the plugin
+   bin/opensearch-dashboards-plugin install file:///path/to/swift-dashboard-plugin.zip
+   ```
+
+4. **Configure Environment Variables**
+   
+   Create a startup script or set environment variables:
+   ```bash
+   # Required: Moesif API Key
+   export MOESIF_API_KEY="your-moesif-management-api-key"
+   
+   # Optional: Moesif Configuration
+   export MOESIF_BASE_URL="https://api.moesif.com"
+   export MOESIF_SEARCH_PATH="/v1/search/~/search/events"
+   export MOESIF_TRANSLATION_ACTION_NAME="translation_log"
+   export MOESIF_LOG_ACTION_NAME="ballerina_log"
+   export MOESIF_TIMEOUT="30000"          # 30 seconds
+   export MOESIF_MAX_RETRIES="3"          # Number of retry attempts
+   export MOESIF_RETRY_DELAY="1000"       # Delay between retries in milliseconds
+   export MOESIF_DEBUG="false"            # Enable debug logging (true/false)
+   
+   # Start OpenSearch Dashboards
+   bin/opensearch-dashboards.sh
+   ```
+
+5. **Configure Translator to Send to Moesif**
+   
+   In your translator's `Config.toml`:
+   ```toml
+   [moesif]
+   enabled = true
+   applicationId = "your-moesif-application-id"
+   apiEndpoint = "https://api.moesif.net/v1/actions"
+   timeout = 5.0
+   retryCount = 3
+   ```
+
+6. **Access Dashboard**
+   ```
+   http://localhost:5601/app/swiftDashboard
+   ```
+
+**That's it!** Your dashboard is now connected to Moesif and will display translation events in real-time.
+
+---
+
+## Option 2: OpenSearch Setup
+
+### Production Deployment
 
 **Prerequisites:**
 - Java 17+ (for OpenSearch runtime)
@@ -319,7 +407,48 @@ A comprehensive OpenSearch-based dashboard for monitoring and analyzing SWIFT MT
    fluent-bit -c /path/to/fluent-bit.conf
    ```
 
+9. **Access Dashboard**
+   ```
+   http://localhost:5601/app/swiftDashboard
+   ```
+
+**OpenSearch setup complete!** Your dashboard is now ingesting logs via Fluent Bit.
+
+---
+
 ## 🔧 Build & Deploy (Advanced)
+
+### Switching Between Data Sources
+
+**To use Moesif (default):**
+```bash
+# Just set your Moesif API Key
+export MOESIF_API_KEY="your-moesif-management-api-key"
+
+# Restart OpenSearch Dashboards
+```
+
+**To switch to OpenSearch:**
+```bash
+# Enable OpenSearch data source
+export USE_OPENSEARCH=true
+
+# Restart OpenSearch Dashboards
+```
+
+The dashboard automatically detects which data source to use:
+```typescript
+// In dashboardController.ts
+this.useOpenSearch = env.USE_OPENSEARCH === 'true';
+
+if (this.useOpenSearch) {
+  this.openSearchService = new OpenSearchService(context);
+} else {
+  this.moesifService = new MoesifService(context); // Default
+}
+```
+
+---
 
 ### Building Dashboard Plugin from Source
 
@@ -343,7 +472,8 @@ A comprehensive OpenSearch-based dashboard for monitoring and analyzing SWIFT MT
    ```bash
    cd plugins/
    git clone https://github.com/wso2/reference-implementation-cbpr.git
-   cd reference-implementation-cbpr/dashboard/swift_dashboard/
+   cp -r reference-implementation-cbpr/dashboard/swift_dashboard .
+   cd swift_dashboard
    ```
 
 3. **Build Plugin**

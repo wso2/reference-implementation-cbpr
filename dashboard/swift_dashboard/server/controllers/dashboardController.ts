@@ -17,14 +17,27 @@
 import { RequestHandlerContext, OpenSearchDashboardsRequest } from '../../../../src/core/server';
 import { PluginContext } from '../types';
 import OpenSearchService from '../services/opensearchService';
+import MoesifService from '../services/moesifService';
+import { env } from 'process';
 
 export class DashboardController {
   private context: PluginContext;
-  private openSearchService: OpenSearchService;
+  private openSearchService?: OpenSearchService;
+  private moesifService: MoesifService;
+  private useOpenSearch: boolean;
   
   constructor(context: PluginContext) {
     this.context = context;
-    this.openSearchService = new OpenSearchService(context);
+    this.useOpenSearch = env.USE_OPENSEARCH === 'true';
+    
+    if (this.useOpenSearch) {
+      this.openSearchService = new OpenSearchService(context);
+      this.context.logger.info('Using OpenSearch data service');
+    } else {
+      this.context.logger.info('Using Moesif data service (default)');
+    }
+    
+    this.moesifService = new MoesifService(context);
   }
   
   /**
@@ -36,10 +49,9 @@ export class DashboardController {
       
       this.context.logger.debug(`Fetching message with ID: ${id}`);
       
-      const message = await this.openSearchService.getMessageById(
-        context.core.opensearch.client.asCurrentUser,
-        id
-      );
+      const message = this.useOpenSearch
+        ? await this.openSearchService!.getMessageById(context.core.opensearch.client.asCurrentUser, id)
+        : await this.moesifService.getMessageById(id);
       
       return message;
     } catch (error) {
@@ -76,12 +88,9 @@ export class DashboardController {
       this.context.logger.debug(`Fetching dashboard data${fromDate ? ` from ${fromDate} to ${toDate}` : ''}${direction ? ` with direction '${direction}'` : ''}`);
       
       // Pass parameters to the service method
-      const data = await this.openSearchService.getMessagesInDateRange(
-        context.core.opensearch.client.asCurrentUser,
-        fromDate,
-        toDate,
-        direction
-      );
+      const data = this.useOpenSearch
+        ? await this.openSearchService!.getMessagesInDateRange(context.core.opensearch.client.asCurrentUser, fromDate, toDate, direction)
+        : await this.moesifService.getMessagesInDateRange(fromDate, toDate, direction);
       
       return data;
     } catch (error) {
@@ -101,11 +110,9 @@ export class DashboardController {
       this.context.logger.debug(`Fetching log data`);
       
       // Pass parameters to the service method
-      const data = await this.openSearchService.getLogData(
-        context.core.opensearch.client.asCurrentUser,
-        dateFrom,
-        dateTo
-      );
+      const data = this.useOpenSearch
+        ? await this.openSearchService!.getLogData(context.core.opensearch.client.asCurrentUser, dateFrom, dateTo)
+        : await this.moesifService.getLogData(dateFrom, dateTo);
 
       return data;
     } catch (error) {
@@ -123,11 +130,9 @@ export class DashboardController {
       const timeframe = (query.timeframe as 'daily' | 'weekly' | 'monthly') || 'daily';
       const direction = query.direction as 'inward' | 'outward' | undefined;
       
-      const chartData = await this.openSearchService.getMessageChartData(
-        context.core.opensearch.client.asCurrentUser,
-        timeframe,
-        direction
-      );
+      const chartData = this.useOpenSearch
+        ? await this.openSearchService!.getMessageChartData(context.core.opensearch.client.asCurrentUser, timeframe, direction)
+        : await this.moesifService.getMessageChartData(timeframe, direction);
       
       return chartData;
     } catch (error) {
@@ -143,10 +148,9 @@ export class DashboardController {
     try {
       const direction = (request.query as any).direction as 'inward' | 'outward' | undefined;
       
-      const messages = await this.openSearchService.getDailyMessages(
-        context.core.opensearch.client.asCurrentUser,
-        direction
-      );
+      const messages = this.useOpenSearch
+        ? await this.openSearchService!.getDailyMessages(context.core.opensearch.client.asCurrentUser, direction)
+        : await this.moesifService.getDailyMessages(direction);
       
       const today = new Date().toISOString().split('T')[0];
       
@@ -169,10 +173,9 @@ export class DashboardController {
     try {
       const direction = (request.query as any).direction as 'inward' | 'outward' | undefined;
       
-      const messages = await this.openSearchService.getWeeklyMessages(
-        context.core.opensearch.client.asCurrentUser,
-        direction
-      );
+      const messages = this.useOpenSearch
+        ? await this.openSearchService!.getWeeklyMessages(context.core.opensearch.client.asCurrentUser, direction)
+        : await this.moesifService.getWeeklyMessages(direction);
       
       // Get date range for the week
       const today = new Date();
@@ -203,10 +206,9 @@ export class DashboardController {
     try {
       const direction = (request.query as any).direction as 'inward' | 'outward' | undefined;
       
-      const messages = await this.openSearchService.getMonthlyMessages(
-        context.core.opensearch.client.asCurrentUser,
-        direction
-      );
+      const messages = this.useOpenSearch
+        ? await this.openSearchService!.getMonthlyMessages(context.core.opensearch.client.asCurrentUser, direction)
+        : await this.moesifService.getMonthlyMessages(direction);
       
       const today = new Date();
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -233,10 +235,9 @@ export class DashboardController {
     try {
       const direction = (request.query as any).direction as 'inward' | 'outward' | undefined;
       
-      const chartData = await this.openSearchService.getDailyChartData(
-        context.core.opensearch.client.asCurrentUser,
-        direction
-      );
+      const chartData = this.useOpenSearch
+        ? await this.openSearchService!.getDailyChartData(context.core.opensearch.client.asCurrentUser, direction)
+        : await this.moesifService.getDailyChartData(direction);
       
       return chartData;
     } catch (error) {
@@ -252,10 +253,9 @@ export class DashboardController {
     try {
       const direction = (request.query as any).direction as 'inward' | 'outward' | undefined;
       
-      const chartData = await this.openSearchService.getWeeklyChartData(
-        context.core.opensearch.client.asCurrentUser,
-        direction
-      );
+      const chartData = this.useOpenSearch
+        ? await this.openSearchService!.getWeeklyChartData(context.core.opensearch.client.asCurrentUser, direction)
+        : await this.moesifService.getWeeklyChartData(direction);
       
       return chartData;
     } catch (error) {
@@ -271,10 +271,9 @@ export class DashboardController {
     try {
       const direction = (request.query as any).direction as 'inward' | 'outward' | undefined;
       
-      const chartData = await this.openSearchService.getMonthlyChartData(
-        context.core.opensearch.client.asCurrentUser,
-        direction
-      );
+      const chartData = this.useOpenSearch
+        ? await this.openSearchService!.getMonthlyChartData(context.core.opensearch.client.asCurrentUser, direction)
+        : await this.moesifService.getMonthlyChartData(direction);
       
       return chartData;
     } catch (error) {
@@ -298,19 +297,13 @@ export class DashboardController {
       
       let result;
       if (includeStats) {
-        result = await this.openSearchService.getTopMessageTypesWithStats(
-          context.core.opensearch.client.asCurrentUser,
-          timeFilter,
-          direction,
-          limit
-        );
+        result = this.useOpenSearch
+        ? await this.openSearchService!.getTopMessageTypesWithStats(context.core.opensearch.client.asCurrentUser, timeFilter, direction, limit)
+        : await this.moesifService.getTopMessageTypesWithStats(timeFilter, direction, limit);
       } else {
-        result = await this.openSearchService.getTopMessageTypes(
-          context.core.opensearch.client.asCurrentUser,
-          timeFilter,
-          direction,
-          limit
-        );
+        result = this.useOpenSearch
+        ? await this.openSearchService!.getTopMessageTypes(context.core.opensearch.client.asCurrentUser, timeFilter, direction, limit)
+        : await this.moesifService.getTopMessageTypes(timeFilter, direction, limit);
       }
       
       // Get time period information for context
@@ -392,12 +385,9 @@ public async getRecentMessages(context: RequestHandlerContext, request: OpenSear
       this.context.logger.debug(`Getting recent messages: limit=${limit}, direction=${direction}, period=${period}`);
       
       try {
-        const recentMessages = await this.openSearchService.getRecentMessages(
-          context.core.opensearch.client.asCurrentUser,
-          limit,
-          direction,
-          period
-        );
+        const recentMessages = this.useOpenSearch
+        ? await this.openSearchService!.getRecentMessages(context.core.opensearch.client.asCurrentUser, limit, direction, period)
+        : await this.moesifService.getRecentMessages(limit, direction, period);
         
         // Always return an array, even if empty
         return {
@@ -429,7 +419,9 @@ public async getRecentMessages(context: RequestHandlerContext, request: OpenSear
    */
   public async refreshCache(context: RequestHandlerContext, request: OpenSearchDashboardsRequest) {
     try {
-      this.openSearchService.invalidateCache();
+      this.useOpenSearch
+        ? this.openSearchService!.invalidateCache()
+        : this.moesifService.invalidateCache();
       return { message: 'Cache invalidated successfully' };
     } catch (error) {
       this.context.logger.error(`Error in refreshCache: ${error}`);
@@ -446,11 +438,9 @@ public async getRecentMessages(context: RequestHandlerContext, request: OpenSear
       
       this.context.logger.debug(`Fetching error statistics for ${timeFilter} period and ${direction} direction`);
       
-      const errorStats = await this.openSearchService.getErrorStatistics(
-        context.core.opensearch.client.asCurrentUser,
-        timeFilter,
-        direction
-      );
+      const errorStats = this.useOpenSearch
+        ? await this.openSearchService!.getErrorStatistics(context.core.opensearch.client.asCurrentUser, timeFilter, direction)
+        : await this.moesifService.getErrorStatistics(timeFilter, direction);
       
       return errorStats;
     } catch (error) {
