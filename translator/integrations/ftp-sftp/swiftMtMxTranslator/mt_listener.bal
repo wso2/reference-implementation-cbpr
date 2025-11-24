@@ -226,7 +226,7 @@ function postProcessSkippedMtMxMessage(string originalMessage, string logId) ret
 
     http:Request clientRequest = new;
     clientRequest.setHeader("Content-Type", "application/json");
-    clientRequest.setPayload({"originalMessage": originalMessage});
+    clientRequest.setPayload({"translatedMessage": "", "originalMessage": originalMessage});
 
     string|error mtmxClientResponse = mtmxExtHttpClient->post(MT_MX_SKIPPED_POST_PROCESS_CONTEXT_PATH, clientRequest);
 

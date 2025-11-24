@@ -66,6 +66,7 @@ type FtpListener record {
 type Extension record{
     boolean preProcess;
     boolean postProcess;
+    boolean skippedMsgPostProcess;
     string basepath?;
 };
 

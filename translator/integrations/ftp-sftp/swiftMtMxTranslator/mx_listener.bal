@@ -21,7 +21,7 @@ import ballerina/log;
 import ballerinax/financial.iso20022ToSwiftmt as mxToMt;
 import ballerinax/financial.swift.mt as swiftmt;
 
-// MT->MX Translator service
+// MX->MT Translator service
 ftp:Service mxFileListenerService = service object {
 
     remote function onFileChange(ftp:WatchEvent & readonly event, ftp:Caller caller) returns error? {
@@ -50,8 +50,8 @@ ftp:Service mxFileListenerService = service object {
                 // Incoming message is a SWIFT MT message. Do not process it.
                 log:printInfo(string `[Listner - ${mxMtListenerName}] Incoming message is a SWIFT MT message. 
                     Skipping processing.`);
-                handleSkip(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, addedFile.name, INWARD, 
-                    addedFile.extension);
+                handleSkip(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, addedFile.name, INWARD,
+                        addedFile.extension);
                 return;
             }
             handleMxMtTranslation(inMsg, addedFile.name, logId);
@@ -149,7 +149,6 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
             INWARD, refId, mtMsgType, mxMsgType, msgCcy, msgAmnt);
 }
 
-
 // Pre-process the incoming MX message if the extension is enabled.
 function preProcessMxMtMessage(string message, string logId) returns string|error {
     if !translator.mxMtExtension.preProcess {
@@ -190,6 +189,31 @@ function postProcessMxMtMessage(string message, string originalMessage, string l
 
     if mxmtClientResponse is error {
         log:printError(string `[Listner - ${mxMtListenerName}] Error occurred while calling MXMT postprocess endpoint.`,
+                err = mxmtClientResponse.toBalString());
+        return mxmtClientResponse;
+    }
+    return mxmtClientResponse;
+}
+
+// Post-process the skipped MX message if the extension is enabled.
+function postProcessSkippedMxMtMessage(string originalMessage, string logId) returns string|error {
+
+    if !translator.mxMtExtension.skippedMsgPostProcess {
+        log:printDebug(string `[Listner - ${mxMtListenerName}][${logId}] Skipped message Post-processing is disabled. 
+            Skipping post-processing.`);
+        return originalMessage;
+    }
+    log:printInfo(string `[Listner - ${mxMtListenerName}][${logId}] MXMT skipped message post-process extension engaged.`);
+    log:printDebug(string `[Listner - ${mxMtListenerName}][${logId}] Skipped Post-processing message: ${originalMessage.toBalString()}`);
+
+    http:Request clientRequest = new;
+    clientRequest.setHeader("Content-Type", "application/json");
+    clientRequest.setPayload({"translatedMessage": "", "originalMessage": originalMessage});
+
+    string|error mxmtClientResponse = mxmtExtHttpClient->post(MX_MT_POST_PROCESS_CONTEXT_PATH, clientRequest);
+
+    if mxmtClientResponse is error {
+        log:printError(string `[Listner - ${mxMtListenerName}] Error occurred while calling MXMT skipped postprocess endpoint.`,
                 err = mxmtClientResponse.toBalString());
         return mxmtClientResponse;
     }

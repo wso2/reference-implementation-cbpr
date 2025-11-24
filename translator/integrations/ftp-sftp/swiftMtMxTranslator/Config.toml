@@ -101,9 +101,11 @@ supportedMTMessageTypes = [
 [translator.mxMtExtension]
 preProcess = true
 postProcess = true
+skippedMsgPostProcess = true
 basepath = "http://localhost:9090"
 
 [translator.mtMxExtension]
 preProcess = true
 postProcess = true
+skippedMsgPostProcess = true
 basepath = "http://localhost:9090"
