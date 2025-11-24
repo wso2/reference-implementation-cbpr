@@ -210,7 +210,7 @@ function postProcessSkippedMxMtMessage(string originalMessage, string logId) ret
     clientRequest.setHeader("Content-Type", "application/json");
     clientRequest.setPayload({"translatedMessage": "", "originalMessage": originalMessage});
 
-    string|error mxmtClientResponse = mxmtExtHttpClient->post(MX_MT_POST_PROCESS_CONTEXT_PATH, clientRequest);
+    string|error mxmtClientResponse = mxmtExtHttpClient->post(MX_MT_SKIPPED_POST_PROCESS_CONTEXT_PATH, clientRequest);
 
     if mxmtClientResponse is error {
         log:printError(string `[Listner - ${mxMtListenerName}] Error occurred while calling MXMT skipped postprocess endpoint.`,
