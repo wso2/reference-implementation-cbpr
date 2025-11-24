@@ -76,8 +76,10 @@ final readonly & map<typedesc<record {}>> isoMessageTypes = {
 
 const string MT_MX_PRE_PROCESS_CONTEXT_PATH = "/mt-mx/pre-process";
 const string MT_MX_POST_PROCESS_CONTEXT_PATH = "/mt-mx/post-process";
+const string MT_MX_SKIPPED_POST_PROCESS_CONTEXT_PATH = "/mt-mx/skipped-post-process";
 const string MX_MT_PRE_PROCESS_CONTEXT_PATH = "/mx-mt/pre-process";
 const string MX_MT_POST_PROCESS_CONTEXT_PATH = "/mx-mt/post-process";
+const string MX_MT_SKIPPED_POST_PROCESS_CONTEXT_PATH = "/mx-mt/skipped-post-process";
 
 const string BLOCK2 = "block2";
 const string BLOCK3 = "block3";
@@ -86,7 +88,7 @@ const string MESSAGE_TYPE = "messageType";
 const string VALIDATION_FLAG = "ValidationFlag";
 const string VALUE = "value";
 
-regexp:RegExp mtRegex = re `^\{1:[^\}]+\}(\{2:[^\}]+\})?(\{3:[^\}]+\}\})?(\{4:\n)?(.*\n)*-\}(\{5:[^\}]+\}\})?(\{S:.*\})*`;
+regexp:RegExp mtRegex = re `^\{1:[^\}]+\}(\{2:[^\}]+\})?(\{3:[^\}]+\}\})?(\{4:\r?\n)?(.*\r?\n)*-\}(\{5:[^\}]+\}\})?(\{S:.*\})*`;
 
 enum status {
     SUCCESS = "success",

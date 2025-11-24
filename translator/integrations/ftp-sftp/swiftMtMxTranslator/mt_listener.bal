@@ -18,7 +18,6 @@ import ballerina/ftp;
 import ballerina/http;
 import ballerina/io;
 import ballerina/log;
-
 import ballerinax/financial.swift.mt as swiftmt;
 import ballerinax/financial.swiftmtToIso20022 as mtToMx;
 
@@ -37,12 +36,12 @@ ftp:Service mtFileListenerService = service object {
             // Get the newly added file from the SFTP server as a `byte[]` stream.
             stream<byte[] & readonly, io:Error?> fileStream = check caller->get(addedFile.pathDecoded);
 
-            // copy to local file system
-            check io:fileWriteBlocksFromStream(string `/tmp/swiftTranslator/${addedFile.name}`, fileStream);
-            check fileStream.close();
-
-            // performs a read operation to read the lines as an array.
-            string inMsg = check io:fileReadString(string `/tmp/swiftTranslator/${addedFile.name}`);
+            string inMsg = "";
+            byte[][] & readonly chunks = check from byte[] & readonly chunk in fileStream
+                select chunk;
+            foreach byte[] & readonly chunk in chunks {
+                inMsg += check string:fromBytes(chunk);
+            }
             log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Incoming message: ${inMsg}`);
 
             // Delete the file from the SFTP server after reading.
@@ -75,7 +74,7 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
         // If required, this can be configured to treat as a failure by configuring the 
         // skippedFilepath in the configurables.
         handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, UNKNOWN,
-            extension = fileExtension);
+                extension = fileExtension);
         return;
     }
 
@@ -83,7 +82,7 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
     if parsedMsg is error {
         if parsedMsg.message() == UNSUPPORTED_MT_MSG_ERROR {
             handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, UNKNOWN,
-                extension = fileExtension);
+                    extension = fileExtension);
             return;
         }
         log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while parsing MT message. 
@@ -100,7 +99,7 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
         msgType = block2[MESSAGE_TYPE] is string ? block2[MESSAGE_TYPE].toString() : "";
     }
     string refId = "Unknown";
-    if parsedMsg[BLOCK4] is record{} {
+    if parsedMsg[BLOCK4] is record {} {
         json block4 = <json>parsedMsg[BLOCK4];
         refId = extractRefId(block4, ());
     }
@@ -140,12 +139,12 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
             if postProcessedMsg is error {
                 log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error while post-processing the 
                     translated message.`, err = postProcessedMsg.toBalString());
-                handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, postProcessedMsg, fileName, OUTWARD, 
-                    refId);
+                handleError(mtMxClientObj, mtMxListenerName, logId, swiftMessage, postProcessedMsg, fileName, OUTWARD,
+                        refId);
                 return;
             }
             handleSuccess(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage,
-                    postProcessedMsg is xml ? toXmlString(postProcessedMsg) : postProcessedMsg, 
+                        postProcessedMsg is xml ? toXmlString(postProcessedMsg) : postProcessedMsg,
                     fileName, OUTWARD, refId, mtMsgType, mxMsgType, msgCcy, msgAmnt);
         } else {
             // If the translation fails, log the error and send the original message to the failed directory.
@@ -159,11 +158,10 @@ function handleMtMxTranslation(string incomingMsg, string fileName, string logId
         log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Message type is ${msgType}. 
             Translator is not engaged for this message type.`);
         handleSkip(mtMxClientObj, mxMtClientObj, mtMxListenerName, logId, swiftMessage, fileName, OUTWARD, refId,
-            extension = fileExtension);
+                extension = fileExtension);
 
     }
 }
-
 
 // Pre-process the incoming MT message if the extension is enabled.
 function preProcessMtMxMessage(string message, string logId) returns string|error {
@@ -210,6 +208,34 @@ function postProcessMtMxMessage(xml message, string originalMessage, string logI
     } else {
         log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] MTMX post-process response received.`);
         log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] MTMX post-process response: 
+            ${mtmxClientResponse.toBalString()}`);
+    }
+    return mtmxClientResponse;
+}
+
+// Post-process skipped MT message if the extension is enabled.
+function postProcessSkippedMtMxMessage(string originalMessage, string logId) returns string|error {
+    if !translator.mtMxExtension.skippedMsgPostProcess {
+        log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] Skipped message post-processing is disabled. 
+            Skipping post-processing for skipped message.`);
+        return originalMessage;
+    }
+    log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] MTMX skipped message post-process extension engaged.`);
+    log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Skipped post-processing message: 
+        ${originalMessage.toBalString()}`);
+
+    http:Request clientRequest = new;
+    clientRequest.setHeader("Content-Type", "application/json");
+    clientRequest.setPayload({"translatedMessage": "", "originalMessage": originalMessage});
+
+    string|error mtmxClientResponse = mtmxExtHttpClient->post(MT_MX_SKIPPED_POST_PROCESS_CONTEXT_PATH, clientRequest);
+
+    if mtmxClientResponse is error {
+        log:printError(string `[Listner - ${mtMxListenerName}][${logId}] Error occurred while calling MTMX skipped 
+            postprocess endpoint.`, err = mtmxClientResponse.toBalString());
+    } else {
+        log:printInfo(string `[Listner - ${mtMxListenerName}][${logId}] MTMX skipped post-process response received.`);
+        log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] MTMX skipped post-process response: 
             ${mtmxClientResponse.toBalString()}`);
     }
     return mtmxClientResponse;

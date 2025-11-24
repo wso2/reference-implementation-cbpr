@@ -46,6 +46,7 @@ type ClientConfig record {
     string bkpSkippedFilepath;
     string outwardFilepath; 
     string outputFileNamePattern;
+    string skippedOutputFileNamePattern;
 };
 
 type LogConfig record {
@@ -66,6 +67,7 @@ type FtpListener record {
 type Extension record{
     boolean preProcess;
     boolean postProcess;
+    boolean skippedMsgPostProcess;
     string basepath?;
 };
 

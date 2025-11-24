@@ -16,7 +16,7 @@ pollingInterval = 1.0
 # Directory where incoming MT files are placed
 inwardFilepath = "/mt/inward/"
 # Pattern to match incoming file names
-inwardFileNamePattern = "(.*).txt"
+inwardFileNamePattern = ".*"
 
 # Configurables for the MT Server client (used to send files)
 [mtClient]
@@ -38,6 +38,7 @@ bkpSkippedFilepath = "/mt/skipped/"
 # Directory where translated MT files are moved
 outwardFilepath = "/mt/outward/"
 outputFileNamePattern = ".fin"
+skippedOutputFileNamePattern = ".xml"
 
 # Configurables for the MX->MT FTP listener
 [mxMtListener]
@@ -80,6 +81,7 @@ bkpSkippedFilepath = "/mx/skipped/"
 # Directory where translated MX files are moved
 outwardFilepath = "/mx/outward/"
 outputFileNamePattern = ".xml"
+skippedOutputFileNamePattern = ".fin"
 
 
 [ballerina.log]
@@ -101,9 +103,14 @@ supportedMTMessageTypes = [
 [translator.mxMtExtension]
 preProcess = true
 postProcess = true
+skippedMsgPostProcess = false
 basepath = "http://localhost:9090"
 
 [translator.mtMxExtension]
 preProcess = true
 postProcess = true
+skippedMsgPostProcess = false
 basepath = "http://localhost:9090"
+
+[ballerinax.financial.swiftmtToIso20022]
+additionalSenderToReceiverInfoCodes = ["REC"]

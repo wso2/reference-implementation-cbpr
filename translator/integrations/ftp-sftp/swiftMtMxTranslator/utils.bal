@@ -14,14 +14,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/file;
 import ballerina/ftp;
 import ballerina/io;
 import ballerina/log;
 import ballerina/regex;
 import ballerina/time;
 import ballerina/uuid;
-
 
 # Handle error scenarios for FTP client and listener operations
 #
@@ -40,7 +38,6 @@ function handleError(FtpClient ftpClient, string listenerName, string logId, str
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = UNKNOWN, mxMsgType = UNKNOWN, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, errorMsg = errorMsg.toBalString(), status = FAILED);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -63,12 +60,27 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
 
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message type is not supported.
         Skipping message translation.`);
-    sendToSourceFTP(sourceClient, logId, SKIP, incomingMsg, fileId);
-    sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId, false, extension);
-    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
+
+    // Post-process the skipped MT or MX message if the extension is enabled.
+    string|error postProcessedMsg;
+    if direction == OUTWARD {
+        postProcessedMsg = postProcessSkippedMtMxMessage(incomingMsg, logId);
+    } else {
+        postProcessedMsg = postProcessSkippedMxMtMessage(incomingMsg, logId);
+    }
+
+    if postProcessedMsg is error {
+        log:printError(string `[Listner - ${listenerName}][${logId}] Error while post-processing skipped message.`,
+                err = postProcessedMsg.toBalString());
+        handleError(sourceClient, listenerName, logId, incomingMsg, postProcessedMsg, fileId, direction, refId);
+        return;
+    }
+
+    sendToSourceFTP(sourceClient, logId, SKIP, postProcessedMsg, fileId);
+    sendToDestinationFTP(destinationClient, logId, postProcessedMsg, fileId, false, extension);
+    appendToDashboardLogs(listenerName, postProcessedMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, status = SKIPPED);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -97,7 +109,6 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg.toBalString(), msgId = fileId,
             refId = refId, direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = currency,
             amount = amount, status = SUCCESSFUL);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -115,8 +126,8 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
 # + amount - amount of the transaction
 # + errorMsg - error message
 # + status - status of the operation (successful, failed, skipped)
-function appendToDashboardLogs(string listenerName, string orgnlMessage, string translatedMessage, string msgId, 
-        string refId, string direction, string mtmsgType, string mxMsgType, string currency, string amount, 
+function appendToDashboardLogs(string listenerName, string orgnlMessage, string translatedMessage, string msgId,
+        string refId, string direction, string mtmsgType, string mxMsgType, string currency, string amount,
         string errorMsg = "", string status = SUCCESSFUL) {
 
     // Create values for the JSON object
@@ -244,9 +255,16 @@ function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml mess
 
         string:RegExp separator = re `\.`;
         string fileId = msgId != "" ? separator.split(msgId)[0] : logId;
-        string extension = fileExtension != "" ? fileExtension : ftpClient.clientConfig.outputFileNamePattern;
-        string outputFileName = translated ? string `${directory}/${fileId}_${fileSuffix}${extension}` :
-            string `${directory}/${fileId}.${extension}`;
+        string extension;
+        string outputFileName;
+        if translated {
+            extension = fileExtension != "" ? fileExtension : ftpClient.clientConfig.outputFileNamePattern;
+            outputFileName = string `${directory}/${fileId}_${fileSuffix}${extension}`;
+        } else{
+            // not translated message (assumed to be skipped message)
+            extension = fileExtension != "" ? string `.${fileExtension}` : ftpClient.clientConfig.skippedOutputFileNamePattern;
+            outputFileName = string `${directory}/${fileId}${extension}`;
+        }
 
         ftp:Error? ftpWrite = ('client)->put(outputFileName, message);
         if ftpWrite is ftp:Error {
@@ -338,21 +356,6 @@ function getMxMessageType(xml xmlContent) returns string|error {
         }
     }
     return UNKNOWN;
-}
-
-# Clean up temporary files created during processing.
-#
-# + fileName - name of the temporary file to be deleted
-# + logId - unique identifier for the log entry
-# + listenerName - name of the listener
-function cleanTempFile(string fileName, string logId, string listenerName) {
-    error? fileDelete = file:remove(string `/tmp/swiftTranslator/${fileName}`);
-    if fileDelete is error {
-        log:printError(string `[Listener - ${listenerName}][${logId}] Error while deleting temporary file`,
-                err = fileDelete.toBalString());
-    } else {
-        log:printDebug(string `[Listener - ${listenerName}][${logId}] Temporary file deleted successfully.`);
-    }
 }
 
 # Get the transaction currency and amount from the SWIFT MT message.
