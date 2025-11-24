@@ -86,7 +86,7 @@ const string MESSAGE_TYPE = "messageType";
 const string VALIDATION_FLAG = "ValidationFlag";
 const string VALUE = "value";
 
-regexp:RegExp mtRegex = re `^\{1:[^\}]+\}(\{2:[^\}]+\})?(\{3:[^\}]+\}\})?(\{4:\n)?(.*\n)*-\}(\{5:[^\}]+\}\})?(\{S:.*\})*`;
+regexp:RegExp mtRegex = re `^\{1:[^\}]+\}(\{2:[^\}]+\})?(\{3:(\{.*?\})\}(.*))?(\{4:\n)?(.*\n)*-\}(\{5:[^\}]+\}\})?(\{S:.*\})*`;
 
 enum status {
     SUCCESS = "success",
