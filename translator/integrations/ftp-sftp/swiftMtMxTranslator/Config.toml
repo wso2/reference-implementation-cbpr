@@ -111,3 +111,6 @@ preProcess = true
 postProcess = true
 skippedMsgPostProcess = false
 basepath = "http://localhost:9090"
+
+[ballerinax.financial.swiftmtToIso20022]
+additionalSenderToReceiverInfoCodes = ["REC"]
