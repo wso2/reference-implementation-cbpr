@@ -36,12 +36,12 @@ ftp:Service mtFileListenerService = service object {
             // Get the newly added file from the SFTP server as a `byte[]` stream.
             stream<byte[] & readonly, io:Error?> fileStream = check caller->get(addedFile.pathDecoded);
 
-            // copy to local file system
-            check io:fileWriteBlocksFromStream(string `/tmp/swiftTranslator/${addedFile.name}`, fileStream);
-            check fileStream.close();
-
-            // performs a read operation to read the lines as an array.
-            string inMsg = check io:fileReadString(string `/tmp/swiftTranslator/${addedFile.name}`);
+            string inMsg = "";
+            byte[][] & readonly chunks = check from byte[] & readonly chunk in fileStream
+                select chunk;
+            foreach byte[] & readonly chunk in chunks {
+                inMsg += check string:fromBytes(chunk);
+            }
             log:printDebug(string `[Listner - ${mtMxListenerName}][${logId}] Incoming message: ${inMsg}`);
 
             // Delete the file from the SFTP server after reading.

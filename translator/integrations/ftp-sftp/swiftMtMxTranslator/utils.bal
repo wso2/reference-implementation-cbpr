@@ -39,7 +39,6 @@ function handleError(FtpClient ftpClient, string listenerName, string logId, str
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = UNKNOWN, mxMsgType = UNKNOWN, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, errorMsg = errorMsg.toBalString(), status = FAILED);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -83,7 +82,6 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
     appendToDashboardLogs(listenerName, postProcessedMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, status = SKIPPED);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -112,7 +110,6 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg.toBalString(), msgId = fileId,
             refId = refId, direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = currency,
             amount = amount, status = SUCCESSFUL);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -360,21 +357,6 @@ function getMxMessageType(xml xmlContent) returns string|error {
         }
     }
     return UNKNOWN;
-}
-
-# Clean up temporary files created during processing.
-#
-# + fileName - name of the temporary file to be deleted
-# + logId - unique identifier for the log entry
-# + listenerName - name of the listener
-function cleanTempFile(string fileName, string logId, string listenerName) {
-    error? fileDelete = file:remove(string `/tmp/swiftTranslator/${fileName}`);
-    if fileDelete is error {
-        log:printError(string `[Listener - ${listenerName}][${logId}] Error while deleting temporary file`,
-                err = fileDelete.toBalString());
-    } else {
-        log:printDebug(string `[Listener - ${listenerName}][${logId}] Temporary file deleted successfully.`);
-    }
 }
 
 # Get the transaction currency and amount from the SWIFT MT message.
