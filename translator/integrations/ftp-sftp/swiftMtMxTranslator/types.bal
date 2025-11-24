@@ -46,6 +46,7 @@ type ClientConfig record {
     string bkpSkippedFilepath;
     string outwardFilepath; 
     string outputFileNamePattern;
+    string skippedOutputFileNamePattern;
 };
 
 type LogConfig record {
