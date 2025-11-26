@@ -210,6 +210,30 @@ postProcess = true # Enable/disable post-processing for MT to MX translation
 basepath = "http://localhost:9090" # Base URL for extension APIs
 ```
 
+### Moesif Analytics (Optional)
+
+Send translation events to Moesif for real-time analytics:
+
+```toml
+[moesif]
+enabled = true                                    # Enable Moesif event publishing
+applicationId = "your-moesif-application-id"      # From moesif.com dashboard
+apiEndpoint = "https://api.moesif.net/v1/actions" # Moesif API endpoint
+timeout = 5.0                                     # HTTP timeout in seconds
+retryCount = 3                                    # Number of retry attempts
+retryInterval = 2.0                               # Delay between retries
+retryBackOffFactor = 2.0                          # Exponential backoff multiplier
+retryMaxWaitInterval = 10.0                       # Maximum wait time between retries
+```
+
+To enable:
+1. Sign up at [moesif.com](https://www.moesif.com/)
+2. Create a new application
+3. Copy your Application ID
+4. Set `enabled = true` and configure `applicationId`
+
+---
+
 ### Directory Structure
 
 The FTP/SFTP server must have a similar directory structure. You can change the paths in the configuration file as 

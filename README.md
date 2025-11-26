@@ -108,9 +108,30 @@ java -jar swiftMtMxTranslator.jar
 
 **Configuration:**
 ```bash
-# Create a configuration file and configure the setup.
-Refer to the sample [Config.toml](https://github.com/wso2/reference-implementation-cbpr/blob/main/translator/integrations/ftp-sftp/swiftMtMxTranslator/Config.toml) for details.
+# Create a configuration file (Config.toml) and configure the setup.
+# Refer to the sample Config.toml for details:
+# https://github.com/wso2/reference-implementation-cbpr/blob/main/translator/integrations/ftp-sftp/swiftMtMxTranslator/Config.toml
 ```
+
+**Optional: Enable Moesif Analytics**
+
+To send translation events to Moesif for analytics:
+
+1. Sign up at [moesif.com](https://www.moesif.com/) and create an application
+2. Copy your Application ID
+3. Edit your `Config.toml`:
+   ```toml
+   [moesif]
+   enabled = true
+   applicationId = "your-moesif-application-id"
+   apiEndpoint = "https://api.moesif.net/v1/actions"
+   timeout = 5.0
+   retryCount = 3
+   ```
+
+This allows the dashboard to display real-time analytics from Moesif instead of OpenSearch.
+
+---
 
 ### Option 2: Development Setup (For Contributors)
 
