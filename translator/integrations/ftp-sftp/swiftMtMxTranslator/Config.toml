@@ -38,7 +38,7 @@ bkpSkippedFilepath = "/mt/skipped/"
 # Directory where translated MT files are moved
 outwardFilepath = "/mt/outward/"
 outputFileNamePattern = ".fin"
-skippedOutputFileNamePattern = ".xml"
+skippedOutputFileNamePattern = ".fin"
 
 # Configurables for the MX->MT FTP listener
 [mxMtListener]
