@@ -54,6 +54,17 @@ type LogConfig record {
     string ballerinaLogFilePath;
 };
 
+type MoesifConfig record {
+    boolean enabled = false;
+    string applicationId;
+    string apiEndpoint = "https://api.moesif.net/v1/actions";
+    decimal timeout = 5.0;
+    int retryCount = 3;
+    decimal retryInterval = 2.0;
+    float retryBackOffFactor = 2.0;
+    decimal retryMaxWaitInterval = 10.0;
+};
+
 type FtpClient record {
     ClientConfig clientConfig;
     ftp:Client? 'client;

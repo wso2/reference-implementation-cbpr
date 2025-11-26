@@ -15,11 +15,23 @@
 // under the License.
 
 import ballerina/ftp;
+import ballerina/http;
 import ballerina/io;
 import ballerina/log;
 import ballerina/regex;
 import ballerina/time;
 import ballerina/uuid;
+
+// Initialize Moesif HTTP client (only if enabled)
+final http:Client? moesifClient = moesif.enabled ? check new (moesif.apiEndpoint, {
+    timeout: moesif.timeout,
+    retryConfig: {
+        count: moesif.retryCount,
+        interval: moesif.retryInterval,
+        backOffFactor: moesif.retryBackOffFactor,
+        maxWaitInterval: moesif.retryMaxWaitInterval
+    }
+}) : ();
 
 # Handle error scenarios for FTP client and listener operations
 #
@@ -35,9 +47,13 @@ function handleError(FtpClient ftpClient, string listenerName, string logId, str
         string fileId, string direction, string refId) {
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message translation failed. Sending to FTP.`);
     sendToSourceFTP(ftpClient, logId, FAILURE, incomingMsg, fileId);
-    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
-            direction = direction, mtmsgType = UNKNOWN, mxMsgType = UNKNOWN, currency = NOT_AVAILABLE,
-            amount = NOT_AVAILABLE, errorMsg = errorMsg.toBalString(), status = FAILED);
+
+    json publishableTranslationEvent = createPublishableTranslationEvent(incomingMsg, translatedMessage = NOT_AVAILABLE, 
+            msgId = fileId, refId = refId, direction = direction, mtmsgType = UNKNOWN, mxMsgType = UNKNOWN, 
+            currency = NOT_AVAILABLE, amount = NOT_AVAILABLE, errorMsg = errorMsg.toBalString(), status = FAILED);
+
+    appendToDashboardLogs(listenerName, publishableTranslationEvent, fileId);
+    sendToMoesif(publishableTranslationEvent, listenerName, fileId);
     return;
 }
 
@@ -76,11 +92,15 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
         return;
     }
 
-    sendToSourceFTP(sourceClient, logId, SKIP, postProcessedMsg, fileId);
-    sendToDestinationFTP(destinationClient, logId, postProcessedMsg, fileId, false, extension);
-    appendToDashboardLogs(listenerName, postProcessedMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
-            direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = NOT_AVAILABLE,
-            amount = NOT_AVAILABLE, status = SKIPPED);
+    sendToSourceFTP(sourceClient, logId, SKIP, incomingMsg, fileId);
+    sendToDestinationFTP(destinationClient, logId, incomingMsg, fileId, false, extension);
+
+    json publishableTranslationEvent = createPublishableTranslationEvent(incomingMsg, translatedMessage = NOT_AVAILABLE, 
+            msgId = fileId, refId = refId, direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, 
+            currency = NOT_AVAILABLE, amount = NOT_AVAILABLE, status = SKIPPED);
+
+    appendToDashboardLogs(listenerName, publishableTranslationEvent, fileId);
+    sendToMoesif(publishableTranslationEvent, listenerName, fileId);
     return;
 }
 
@@ -106,59 +126,25 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message translated successfully. Sending to FTP.`);
     sendToSourceFTP(sourceClient, logId, SUCCESS, incomingMsg, fileId);
     sendToDestinationFTP(destinationClient, logId, translatedMsg, fileId);
-    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg.toBalString(), msgId = fileId,
-            refId = refId, direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = currency,
-            amount = amount, status = SUCCESSFUL);
+
+    json publishableTranslationEvent = createPublishableTranslationEvent(incomingMsg, translatedMessage = translatedMsg.toBalString(), 
+            msgId = fileId, refId = refId, direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, 
+            currency = currency, amount = amount, status = SUCCESSFUL);
+
+    appendToDashboardLogs(listenerName, publishableTranslationEvent, fileId);
+    sendToMoesif(publishableTranslationEvent, listenerName, fileId);
     return;
 }
 
 # Append a log entry to the dashboard logs file.
 #
 # + listenerName - ftp listener name for logging purposes
-# + orgnlMessage - original message
-# + translatedMessage - translated message
+# + publishableTranslationEvent - JSON publishable translation event object
 # + msgId - message id
-# + refId - reference id
-# + direction - direction of the message (inward or outward)
-# + mtmsgType - MT message type
-# + mxMsgType - MX message type
-# + currency - currency of the transaction
-# + amount - amount of the transaction
-# + errorMsg - error message
-# + status - status of the operation (successful, failed, skipped)
-function appendToDashboardLogs(string listenerName, string orgnlMessage, string translatedMessage, string msgId,
-        string refId, string direction, string mtmsgType, string mxMsgType, string currency, string amount,
-        string errorMsg = "", string status = SUCCESSFUL) {
-
-    // Create values for the JSON object
-    time:Utc currentTime = time:utcNow();
-    time:Civil civilTime = time:utcToCivil(currentTime);
-    string|error timestamp = time:civilToString(civilTime);
-    string timeString = timestamp is string ? timestamp : "0000-00-00T00:00:00Z";
-
-    // Create the JSON log entry
-    json logEntry = {
-        "id": msgId,
-        "refId": refId,
-        "mtMessageType": mtmsgType,
-        "mxMessageType": mxMsgType,
-        "currency": currency,
-        "amount": amount,
-        "date": timeString,
-        "direction": direction,
-        "translatedMessage": translatedMessage,
-        "status": status,
-        "originalMessage": orgnlMessage,
-        "fieldError": errorMsg.includes("required") ? errorMsg : "",
-        "notSupportedError": errorMsg.toLowerAscii().includes("not supported") ? errorMsg : "",
-        "invalidError": errorMsg.toLowerAscii().includes("invalid")
-            && !errorMsg.toLowerAscii().includes("not supported") ? errorMsg : "",
-        "otherError": !errorMsg.includes("required") && !errorMsg.includes("not supported")
-            && !errorMsg.toLowerAscii().includes("invalid") ? errorMsg : ""
-    };
+function appendToDashboardLogs(string listenerName, json publishableTranslationEvent, string msgId) {
 
     // Convert to JSON string and append newline
-    string jsonLogString = logEntry.toJsonString() + "\n";
+    string jsonLogString = publishableTranslationEvent.toJsonString() + "\n";
 
     // Write to file
     io:FileWriteOption option = OPTION_APPEND;
@@ -418,4 +404,102 @@ function extractRefId(json? mtMsgBlock4, xml? mxMsg) returns string {
         refId = (mxMsg/**/<head:BizMsgIdr>).data();
     }
     return refId;
+}
+
+# Create a publishable translation event JSON object with translation details.
+#
+# + orgnlMessage - original message
+# + translatedMessage - translated message
+# + msgId - message id
+# + refId - reference id
+# + direction - direction of the message (inward or outward)
+# + mtmsgType - MT message type
+# + mxMsgType - MX message type
+# + currency - currency of the transaction
+# + amount - amount of the transaction
+# + errorMsg - error message
+# + status - status of the operation (successful, failed, skipped)
+# + return - JSON publishable translation event object
+function createPublishableTranslationEvent(string orgnlMessage, string translatedMessage, string msgId, string refId, 
+        string direction, string mtmsgType, string mxMsgType, string currency, string amount, 
+        string errorMsg = "", string status = SUCCESSFUL) returns json {
+    
+    // Create timestamp for the publishable translation event
+    time:Utc currentTime = time:utcNow();
+    time:Civil civilTime = time:utcToCivil(currentTime);
+    string|error timestamp = time:civilToString(civilTime);
+    string timeString = timestamp is string ? timestamp : "0000-00-00T00:00:00Z";
+
+    // Create and return the JSON publishable translation event object
+    return {
+        "id": msgId,
+        "refId": refId,
+        "mtMessageType": mtmsgType,
+        "mxMessageType": mxMsgType,
+        "currency": currency,
+        "amount": amount,
+        "date": timeString,
+        "direction": direction,
+        "translatedMessage": translatedMessage,
+        "status": status,
+        "originalMessage": orgnlMessage,
+        "fieldError": errorMsg.includes("required") ? errorMsg : "",
+        "notSupportedError": errorMsg.toLowerAscii().includes("not supported") ? errorMsg : "",
+        "invalidError": errorMsg.toLowerAscii().includes("invalid")
+            && !errorMsg.toLowerAscii().includes("not supported") ? errorMsg : "",
+        "otherError": !errorMsg.includes("required") && !errorMsg.includes("not supported")
+            && !errorMsg.toLowerAscii().includes("invalid") ? errorMsg : ""
+    };
+}
+
+
+# Send translation event to Moesif API asynchronously.
+# This function transforms the publishable translation event into Moesif's action event format and sends it
+# using a worker thread to avoid blocking the main execution flow.
+#
+# + publishableTranslationEvent - the JSON publishable translation event object
+# + listenerName - listener name for error logging
+# + msgId - message ID for tracking
+function sendToMoesif(json publishableTranslationEvent, string listenerName, string msgId) {
+    
+    // Skip if Moesif is disabled or client not initialized
+    if !moesif.enabled || moesifClient is () {
+        return;
+    }
+    
+    // Send event asynchronously using a worker (non-blocking)
+    worker MoesifWorker {
+        do {
+            // Extract status for action name
+            json statusField = check publishableTranslationEvent.status;
+            string statusValue = statusField is string ? statusField : "";
+            
+            // Transform to Moesif action format
+            json moesifAction = {
+                "action_name": "translation_log",
+                "request": {
+                    "time": check publishableTranslationEvent.date
+                },
+                "metadata": publishableTranslationEvent
+            };
+            
+            // Send to Moesif API
+            http:Client clientRef = <http:Client>moesifClient;
+            http:Request request = new;
+            request.setHeader("X-Moesif-Application-Id", moesif.applicationId);
+            request.setHeader("Content-Type", "application/json");
+            request.setJsonPayload(moesifAction);
+            
+            http:Response|http:ClientError response = clientRef->post("", request);
+            if response is http:ClientError {
+                log:printError(string `[Listener - ${listenerName}][${msgId}] Failed to send event to Moesif`,
+                        err = response.toBalString());
+            } else {
+                log:printDebug(string `[Listener - ${listenerName}][${msgId}] Event sent to Moesif. Status: ${response.statusCode}`);
+            }
+        } on fail error e {
+            log:printError(string `[Listener - ${listenerName}][${msgId}] Error processing Moesif event`,
+                    err = e.toBalString());
+        }
+    }
 }

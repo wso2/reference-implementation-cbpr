@@ -112,6 +112,17 @@ configurable LogConfig log = {
     ballerinaLogFilePath: "/logs/"
 };
 
+# Configurables for Moesif API integration
+configurable MoesifConfig moesif = {
+    enabled: false,
+    applicationId: "",
+    apiEndpoint: "https://api.moesif.net/v1/actions",
+    timeout: 5.0,
+    retryCount: 3,
+    retryInterval: 2.0,
+    retryBackOffFactor: 2.0,
+    retryMaxWaitInterval: 10.0
+};
 
 string[] & readonly supportedMTMessageTypes = [
     "103", "110", "111", "112", "190", "191", "192", "196", "199", "202", "205", "210", "290", "291", "292", "296", 
