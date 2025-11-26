@@ -421,7 +421,7 @@ modules = [
 [[package]]
 org = "wso2"
 name = "swiftMtMxTranslator"
-version = "2.0.5"
+version = "2.0.6"
 dependencies = [
 	{org = "ballerina", name = "file"},
 	{org = "ballerina", name = "ftp"},
