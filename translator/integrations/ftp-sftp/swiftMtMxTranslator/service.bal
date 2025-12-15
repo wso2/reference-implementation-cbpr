@@ -26,7 +26,7 @@ public function main() returns error? {
     string filePath = log.ballerinaLogFilePath + "/ballerina-" + date + ".log";
     log:Error? outputFile = log:setOutputFile(filePath, log:APPEND);
     if outputFile is log:Error {
-        log:printWarn(string `[Listner - ${mtMxListenerName}] Failed to set the output file for ballerina log.`);
+        log:printWarn(string `[Listener - ${mtMxListenerName}] Failed to set the output file for ballerina log.`);
     }
 
     // Initialize log rotator for daily log rotation
@@ -41,7 +41,7 @@ public function main() returns error? {
             check mtListener.'start();
             // Register the listener dynamically.
             runtime:registerListener(mtListener);
-            log:printInfo(string `[Listner - ${mtMxListenerName}] Listener started.`);
+            log:printInfo(string `[Listener - ${mtMxListenerName}] Listener started.`);
         } else {
             log:printError("Error occurred while creating the FTP listener");
             return error("Error occurred while creating the FTP listener");
@@ -57,7 +57,7 @@ public function main() returns error? {
             check mxListener.'start();
             // Register the listener dynamically.
             runtime:registerListener(mxListener);
-            log:printInfo(string `[Listner - ${mxMtListenerName}] Listener started.`);
+            log:printInfo(string `[Listener - ${mxMtListenerName}] Listener started.`);
         } else {
             log:printError("Error occurred while creating the FTP listener");
             return error("Error occurred while creating the FTP listener");
