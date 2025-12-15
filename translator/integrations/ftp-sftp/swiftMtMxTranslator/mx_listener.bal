@@ -121,7 +121,8 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
             validationFlag = (<record {}>(<record {}>mtRecord[BLOCK3])[VALIDATION_FLAG])[VALUE].ensureType();
         }
     }
-    if validationFlag is string {
+    if validationFlag is string && 
+        (validationFlag.equalsIgnoreCaseAscii("REMIT") || validationFlag.equalsIgnoreCaseAscii("COV")) {
         mtMsgType = mtMsgType + validationFlag;
     }
     log:printInfo(string `[Listner - ${mxMtListenerName}][${logId}] Successfully converted the ${mxMsgType} ISO20022 
