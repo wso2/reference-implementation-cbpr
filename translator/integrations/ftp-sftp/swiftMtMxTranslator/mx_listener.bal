@@ -49,10 +49,10 @@ ftp:Service mxFileListenerService = service object {
             check caller->delete(addedFile.pathDecoded);
 
             // Check if the incoming message is a SWIFT MX message.
-            if inMsg.includes("<?xml") {
+            if inMsg.startsWith("<?xml") {
                 string[] splittedMsg = splitInputToSingleTransactions(inMsg);
                 if splittedMsg.length() > 1 {
-                    log:printDebug(string `[Listener - ${mxMtListenerName}] Incoming message has multiple messages.` + 
+                    log:printDebug(string `[Listener - ${mxMtListenerName}] Incoming message has multiple messages. ` + 
                         "Starting batch processing.");
                     context[IS_BATCH] = "true";
                     int i = 1;
@@ -69,15 +69,17 @@ ftp:Service mxFileListenerService = service object {
                     // only one message available. Proceed with translation.
                     handleMxMtTranslation(inMsg, addedFile.name, logId, context);
                 }
-            }
-
-            // Check if the incoming message is a SWIFT MT message.
-            if inMsg.startsWith("{1:") {
+            } else if inMsg.startsWith("{1:") {            
                 // Incoming message is a SWIFT MT message. Do not process it.
                 log:printInfo(string `[Listener - ${mxMtListenerName}] Incoming message is a SWIFT MT message.` + 
                     " Skipping processing.");
                 handleSkip(mxMtClientObj, mtMxClientObj, mxMtListenerName, logId, inMsg, addedFile.name, INWARD, 
                     UNKNOWN, addedFile.extension);
+            } else {
+                // If message is neither MX nor MT, log error and move to error folder.
+                log:printError(string `[Listener - ${mxMtListenerName}][${logId}] Invalid input message.`);
+                handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, error("Invalid input message"), addedFile.name, 
+                    INWARD, UNKNOWN);
             }
             cleanTempFile(addedFile.name, logId, mxMtListenerName);
         }
@@ -140,11 +142,11 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId, map<
         mtMsgType = block2[MESSAGE_TYPE] is string ? block2[MESSAGE_TYPE].toString() : "";
     }
     if mtMsgType == "" {
-        log:printDebug(string `[Listener - ${mtMxListenerName}][${logId}] Parsed MT message: ${mtRecord.toBalString()}`);
-        log:printError(string `[Listener - ${mtMxListenerName}][${logId}] Error while retrieving MT message type.`,
+        log:printDebug(string `[Listener - ${mxMtListenerName}][${logId}] Parsed MT message: ${mtRecord.toBalString()}`);
+        log:printError(string `[Listener - ${mxMtListenerName}][${logId}] Error while retrieving MT message type.`,
                 error("Invalid MT message type."));
-        handleError(mtMxClientObj, mtMxListenerName, logId, inMsg, error("Invalid MT message type."),
-                processingFileName, OUTWARD, refId);
+        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, error("Invalid MT message type."),
+                processingFileName, INWARD, refId);
         return;
     }
 
