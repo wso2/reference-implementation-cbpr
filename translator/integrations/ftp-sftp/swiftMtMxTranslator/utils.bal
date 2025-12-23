@@ -39,7 +39,6 @@ function handleError(FtpClient ftpClient, string listenerName, string logId, str
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = UNKNOWN, mxMsgType = UNKNOWN, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, errorMsg = errorMsg.toBalString(), status = FAILED);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -83,7 +82,6 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
     appendToDashboardLogs(listenerName, postProcessedMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
             direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, status = SKIPPED);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -112,7 +110,6 @@ function handleSuccess(FtpClient sourceClient, FtpClient destinationClient, stri
     appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = translatedMsg.toBalString(), msgId = fileId,
             refId = refId, direction = direction, mtmsgType = mtmsgType, mxMsgType = mxMsgType, currency = currency,
             amount = amount, status = SUCCESSFUL);
-    cleanTempFile(fileId, logId, listenerName);
     return;
 }
 
@@ -437,4 +434,42 @@ function extractRefId(json? mtMsgBlock4, xml? mxMsg) returns string {
         refId = (mxMsg/**/<head:BizMsgIdr>).data();
     }
     return refId;
+}
+
+
+# Get the file name from the context if in batch mode; otherwise, use the provided file name.
+#
+# + fileName - the default file name
+# + context - the context map containing batch mode information
+# + return - the appropriate file name or an error
+function getFileName(string fileName, map<any> context) returns string|error {
+    if context.hasKey(IS_BATCH) && (check boolean:fromString(context[IS_BATCH].toString())) {
+        string|error ctxFileName = context[FILE_NAME].ensureType();
+        string extension = context.hasKey(FILE_EXTENSION) ? "." + context[FILE_EXTENSION].toString() : "";
+        string batchIndex = context.hasKey(BATCH_INDEX) ? context[BATCH_INDEX].toString() : "";
+        if ctxFileName is string {
+            if extension != "" && ctxFileName.endsWith(extension) {
+                string fileNameWithoutExtension = ctxFileName.substring(0, ctxFileName.length() - extension.length());
+                return string `${fileNameWithoutExtension}_${batchIndex}${extension}`;
+            }
+            return string `${ctxFileName}_${batchIndex}`;
+        }
+    }
+    return fileName;
+}
+
+# Split a bulk MX message into individual transactions.
+#
+# + inputMsg - input MX message
+# + return - return an array of individual MX messages
+function splitInputToSingleTransactions(string inputMsg) returns string[] {
+
+    string[] splittedStrings = re `<\?xml`.split(inputMsg);
+    string[] transactions = [];
+    foreach string input in splittedStrings {
+        if input.trim().length() > 0 {
+            transactions.push("<?xml" + input);
+        }
+    }
+    return transactions;
 }

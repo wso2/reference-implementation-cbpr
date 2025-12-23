@@ -98,3 +98,8 @@ enum status {
 
 const UNSUPPORTED_MT_MSG_ERROR = "SWIFT message type is invalid or not supported.";
 xmlns "urn:iso:std:iso:20022:tech:xsd:head.001.001.02" as head;
+
+const FILE_NAME = "FILE_NAME";
+const FILE_EXTENSION = "FILE_EXTENSION";
+const IS_BATCH = "IS_BATCH";
+const BATCH_INDEX = "BATCH_INDEX";

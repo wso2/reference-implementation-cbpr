@@ -49,6 +49,7 @@ ftp:Service mtFileListenerService = service object {
             check caller->delete(addedFile.pathDecoded);
 
             handleMtMxTranslation(inMsg, addedFile.name, logId, addedFile.extension);
+            cleanTempFile(addedFile.name, logId, mtMxListenerName);
         }
     }
 

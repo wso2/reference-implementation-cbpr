@@ -29,7 +29,10 @@ ftp:Service mxFileListenerService = service object {
         foreach ftp:FileInfo addedFile in event.addedFiles {
 
             string logId = generateLogId();
+            map<any> context = {};
             log:printInfo(string `[Listener - ${mxMtListenerName}][${logId}] File received: ${addedFile.name}`);
+            context[FILE_NAME] = addedFile.name;
+            context[FILE_EXTENSION] = addedFile.extension;
             // Get the newly added file from the SFTP server as a `byte[]` stream.
             stream<byte[] & readonly, io:Error?> fileStream = check caller->get(addedFile.pathDecoded);
 
@@ -45,8 +48,31 @@ ftp:Service mxFileListenerService = service object {
             // Delete the file from the SFTP server after reading.
             check caller->delete(addedFile.pathDecoded);
 
-            // Identify if the incoming message is an ISO20022 message.
-            if mtRegex.isFullMatch(inMsg) {
+            // Check if the incoming message is a SWIFT MX message.
+            if inMsg.includes("<?xml") {
+                string[] splittedMsg = splitInputToSingleTransactions(inMsg);
+                if splittedMsg.length() > 1 {
+                    log:printDebug(string `[Listener - ${mxMtListenerName}] Incoming message has multiple messages.` + 
+                        "Starting batch processing.");
+                    context[IS_BATCH] = "true";
+                    int i = 1;
+                    foreach string msg in splittedMsg {
+                        if msg.trim().length() > 0 {
+                            context[BATCH_INDEX] = i;
+                            handleMxMtTranslation(msg, addedFile.name, string `${logId}_${i}`, context);
+                        }
+                        i += 1;
+                    }
+                    // save original batch file in success folder
+                    sendToSourceFTP(mxMtClientObj, logId, SUCCESS, inMsg, addedFile.name);
+                } else {
+                    // only one message available. Proceed with translation.
+                    handleMxMtTranslation(inMsg, addedFile.name, logId, context);
+                }
+            }
+
+            // Check if the incoming message is a SWIFT MT message.
+            if inMsg.startsWith("{1:") {
                 // Incoming message is a SWIFT MT message. Do not process it.
                 log:printInfo(string `[Listener - ${mxMtListenerName}] Incoming message is a SWIFT MT message. 
                     Skipping processing.`);
@@ -54,7 +80,7 @@ ftp:Service mxFileListenerService = service object {
                         addedFile.extension);
                 return;
             }
-            handleMxMtTranslation(inMsg, addedFile.name, logId);
+            cleanTempFile(addedFile.name, logId, mxMtListenerName);
         }
     }
 };
@@ -64,6 +90,14 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
 
     // Pre-process the incoming MX message if the extension is enabled.
     string|error iso20022MessageString = preProcessMxMtMessage(inMsg, logId);
+    string|error processingFileName = getFileName(fileName, context);
+
+    if processingFileName is error {
+        log:printError(string `[Listener - ${mxMtListenerName}][${logId}] Error while retrieving file name from context.`,
+                err = processingFileName.toBalString());
+        handleError(mxMtClientObj, mxMtListenerName, logId, inMsg, processingFileName, fileName, INWARD, UNKNOWN);
+        return;
+    }
 
     if iso20022MessageString is error {
         log:printError(string `[Listener - ${mxMtListenerName}][${logId}] Error while pre-processing MX message.`,
@@ -111,7 +145,7 @@ function handleMxMtTranslation(string inMsg, string fileName, string logId) {
         log:printError(string `[Listener - ${mtMxListenerName}][${logId}] Error while retrieving MT message type.`,
                 error("Invalid MT message type."));
         handleError(mtMxClientObj, mtMxListenerName, logId, inMsg, error("Invalid MT message type."),
-                fileName, OUTWARD, refId);
+                processingFileName, OUTWARD, refId);
         return;
     }
 
