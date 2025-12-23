@@ -36,10 +36,23 @@ function handleError(FtpClient ftpClient, string listenerName, string logId, str
         string fileId, string direction, string refId) {
     log:printInfo(string `[Listener - ${listenerName}][${logId}] Message translation failed. Sending to FTP.`);
     sendToSourceFTP(ftpClient, logId, FAILURE, incomingMsg, fileId);
-    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = NOT_AVAILABLE, msgId = fileId, refId = refId,
+    appendToDashboardLogs(listenerName, incomingMsg, translatedMessage = getErrorMessage(errorMsg), msgId = fileId, refId = refId,
             direction = direction, mtmsgType = UNKNOWN, mxMsgType = UNKNOWN, currency = NOT_AVAILABLE,
             amount = NOT_AVAILABLE, errorMsg = errorMsg.toBalString(), status = FAILED);
     return;
+}
+
+function getErrorMessage(error errorMsg) returns string {
+    any|error details = errorMsg.detail();
+    if details is map<any> && details.hasKey("body") && details["body"] is map<any> {
+        map<any> body = <map<any>>details["body"];
+        if body.hasKey("message") && body["message"] is string {
+            return <string>body["message"];
+        }
+    } else if errorMsg.message().length() > 0 {
+        return errorMsg.message();
+    }
+    return NOT_AVAILABLE;
 }
 
 # Handle scenarios where the message translation is skipped.
@@ -59,8 +72,8 @@ function handleSkip(FtpClient sourceClient, FtpClient destinationClient, string 
         string incomingMsg, string fileId, string direction, string refId, string mtmsgType = NOT_AVAILABLE,
         string mxMsgType = NOT_AVAILABLE, string extension = "") {
 
-    log:printInfo(string `[Listener - ${listenerName}][${logId}] Message type is not supported.
-        Skipping message translation.`);
+    log:printInfo(string `[Listener - ${listenerName}][${logId}] Message type is not supported. ` + 
+        "Skipping message translation.");
 
     // Post-process the skipped MT or MX message if the extension is enabled.
     string|error postProcessedMsg;
@@ -206,8 +219,8 @@ function sendToSourceFTP(FtpClient ftpClient, string logId, string status, strin
             }
             _ => {
                 directory = "unknown";
-                log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Unknown file write status: 
-                ${status}`);
+                log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] ` + 
+                    string `Unknown file write status: ${status}`);
                 return;
             }
         }
@@ -218,11 +231,11 @@ function sendToSourceFTP(FtpClient ftpClient, string logId, string status, strin
 
         ftp:Error? ftpWrite = ('client)->put(outputFileName, message);
         if ftpWrite is ftp:Error {
-            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Error while sending SWIFT message 
-            to FTP ${outputFileName}`, err = ftpWrite.toBalString());
+            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] ` + 
+                string `Error while sending SWIFT message to FTP ${outputFileName}`, err = ftpWrite.toBalString());
         } else {
-            log:printInfo(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
-                Sending message to FTP ${outputFileName}. Status: ${status} Message ID: ${fileName}`);
+            log:printInfo(string `[Client - ${ftpClient.clientConfig.name}][${logId}] ` +
+                string `Sending message to FTP ${outputFileName}. Status: ${status} Message ID: ${fileName}`);
         }
     } else {
         log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] FTP client is not initialized.`);
@@ -246,8 +259,8 @@ function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml mess
         time:Civil civilTime = time:utcToCivil(currentTime);
         string|time:Error timestamp = time:civilToString(civilTime);
         if timestamp is time:Error {
-            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] 
-            Error while generating timestamp`, err = timestamp.toBalString());
+            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Error while generating timestamp`, 
+                err = timestamp.toBalString());
             return;
         }
         string fileSuffix = timestamp.substring(0, 10) + "_" + timestamp.substring(11, 13) + "-" +
@@ -269,11 +282,11 @@ function sendToDestinationFTP(FtpClient ftpClient, string logId, string|xml mess
 
         ftp:Error? ftpWrite = ('client)->put(outputFileName, message);
         if ftpWrite is ftp:Error {
-            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] Error while sending SWIFT 
-            message to FTP ${outputFileName}`, err = ftpWrite.toBalString());
+            log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] ` + 
+                string `Error while sending SWIFT message to FTP ${outputFileName}`, err = ftpWrite.toBalString());
         } else {
-            log:printDebug(string `[Client - ${ftpClient.clientConfig.name}][${logId}]
-                Sending message to FTP ${outputFileName}. Message ID: ${msgId}`);
+            log:printDebug(string `[Client - ${ftpClient.clientConfig.name}][${logId}]` +
+                string `Sending message to FTP ${outputFileName}. Message ID: ${msgId}`);
         }
     } else {
         log:printError(string `[Client - ${ftpClient.clientConfig.name}][${logId}] FTP client is not initialized.`);
@@ -306,16 +319,16 @@ function getMtMessageInfo(string listenerName, string message) returns [string, 
             // ensure type of a constant. No need to handle error.
             int|error index = message.indexOf(":" + mtField.substring(2) + ":").ensureType(int);
             if index is error {
-                log:printWarn(string `[Listener - ${listenerName}] Error occurred while getting the transaction 
-                    currency and amount.`, index);
+                log:printWarn(string `[Listener - ${listenerName}] ` + 
+                    "Error occurred while getting the transaction currency and amount.", index);
                 msgCcy = NOT_AVAILABLE;
                 msgAmnt = NOT_AVAILABLE;
                 return [msgType, msgCcy, msgAmnt];
             }
             int|error endIndex = message.indexOf("\n", index).ensureType(int);
             if endIndex is error {
-                log:printWarn(string `[Listener - ${listenerName}] Error occurred while getting the transaction 
-                    currency and amount.`, endIndex);
+                log:printWarn(string `[Listener - ${listenerName}] ` + 
+                    "Error occurred while getting the transaction currency and amount.", endIndex);
                 msgCcy = NOT_AVAILABLE;
                 msgAmnt = NOT_AVAILABLE;
                 return [msgType, msgCcy, msgAmnt];
