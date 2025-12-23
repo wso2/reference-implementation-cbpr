@@ -16,7 +16,7 @@ File-based integration for SWIFT MT ↔ MX message translation using FTP/SFTP pr
 
 **🚀 Production Ready? Use the latest release:**
 
-[![Download FTP/SFTP Release](https://img.shields.io/badge/Download%20FTP%2FSFTP%20Release-v2.0.7-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases/tag/translator-v2.0.7)
+[![Download FTP/SFTP Release](https://img.shields.io/badge/Download%20FTP%2FSFTP%20Release-v2.0.8-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases/tag/translator-v2.0.8)
 
 **💡 Only need Java 17+ and FTP/SFTP server access!**
 
@@ -52,7 +52,7 @@ File-based integration for SWIFT MT ↔ MX message translation using FTP/SFTP pr
 1. **Download and extract the release**
    ```bash
    # Download latest release
-   wget https://github.com/wso2/reference-implementation-cbpr/releases/latest/download/swift-mt-mx-translator-2.0.7.tar.gz
+   wget https://github.com/wso2/reference-implementation-cbpr/releases/latest/download/swift-mt-mx-translator-2.0.8.tar.gz
    
    # Extract
    tar -xzf swift-mt-mx-translator-*.tar.gz

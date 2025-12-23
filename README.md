@@ -19,7 +19,7 @@ A comprehensive reference implementation for SWIFT MT ↔ MX message translation
 
 **🚀 Ready to use? Download the latest release:**
 
-[![Download Translator](https://img.shields.io/badge/Download%20Translator-v2.0.7-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases/tag/translator-v2.0.7)
+[![Download Translator](https://img.shields.io/badge/Download%20Translator-v2.0.8-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases/tag/translator-v2.0.8)
 
 [![Download Dashboard](https://img.shields.io/badge/Download%20Dashboard-v1.0.1-success?style=for-the-badge)](https://github.com/wso2/reference-implementation-cbpr/releases/tag/dashboard-v1.0.1)
 
@@ -96,7 +96,7 @@ Visit the [Releases Page](https://github.com/wso2/reference-implementation-cbpr/
 - 📋 View release notes and changelogs
 ```bash
 # Download latest release
-wget https://github.com/wso2/reference-implementation-cbpr/releases/latest/download/swift-mt-mx-translator-2.0.7.tar.gz
+wget https://github.com/wso2/reference-implementation-cbpr/releases/latest/download/swift-mt-mx-translator-2.0.8.tar.gz
 
 # Extract and install
 tar -xzf swift-mt-mx-translator-*.tar.gz
