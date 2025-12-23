@@ -3,7 +3,7 @@ name: Build and Release SWIFT Dashboard
 on:
   push:
     tags:
-      - 'dashboard-v*'  # Triggers on dashboard version tags like dashboard-v1.0.0
+      - 'dashboard-v*'
     paths:
       - 'dashboard/**'
   workflow_dispatch:
@@ -248,46 +248,197 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+
       - name: Download Dashboard Artifacts
         uses: actions/download-artifact@v4
         with:
           name: swift-dashboard-plugin-${{ needs.build-dashboard.outputs.version }}
           path: release/
           
+      - name: Get Previous Tag
+        id: previous_tag
+        run: |
+          # Get the previous dashboard release tag
+          PREVIOUS_TAG=$(git tag -l 'dashboard-v*' --sort=-version:refname | sed -n '2p')
+          if [[ -z "$PREVIOUS_TAG" ]]; then
+            # If no previous tag, use first commit
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "previous_tag=${PREVIOUS_TAG}" >> $GITHUB_OUTPUT
+          echo "Previous tag: ${PREVIOUS_TAG}"
+
+      - name: Generate or Fetch Changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG="${{ steps.previous_tag.outputs.previous_tag }}"
+          CURRENT_TAG="${{ needs.build-dashboard.outputs.tag }}"
+          
+          echo "Generating changelog from ${PREVIOUS_TAG} to ${CURRENT_TAG}"
+          
+          # Start changelog
+          cat > changelog.md << 'EOF_HEADER'
+          ## 📝 Changelog
+          
+          EOF_HEADER
+          
+          # Check if manual changelog is provided
+          if [[ -n "${{ github.event.inputs.changelog_url }}" ]]; then
+            echo "Fetching changelog from provided URL"
+            curl -sSL "${{ github.event.inputs.changelog_url }}" >> changelog.md
+            COMMIT_COUNT="custom"
+            echo "using_custom_changelog=true" >> $GITHUB_OUTPUT
+          else
+            echo "Auto-generating changelog from commits"
+            echo "using_custom_changelog=false" >> $GITHUB_OUTPUT
+            
+            # Get commits since last release, filtered by dashboard path
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"%s|%an|%h" --no-merges -- dashboard/ | \
+            awk -F'|' '
+            BEGIN {
+              print "### ✨ Features"
+              features = 0
+            }
+            /^feat[\(:]/  { 
+              features++
+              sub(/^feat[\(:][^)]*[\)]?: */, "", $1)
+              printf "- %s ([`%s`](https://github.com/${{ github.repository }}/commit/%s)) by @%s\n", $1, $3, $3, $2
+              next
+            }
+            END {
+              if (features == 0) print "_No new features in this release_\n"
+            }
+            ' >> changelog.md
+            
+            echo "" >> changelog.md
+            
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"%s|%an|%h" --no-merges -- dashboard/ | \
+            awk -F'|' '
+            BEGIN {
+              print "### 🐛 Bug Fixes"
+              fixes = 0
+            }
+            /^fix[\(:]/  { 
+              fixes++
+              sub(/^fix[\(:][^)]*[\)]?: */, "", $1)
+              printf "- %s ([`%s`](https://github.com/${{ github.repository }}/commit/%s)) by @%s\n", $1, $3, $3, $2
+              next
+            }
+            END {
+              if (fixes == 0) print "_No bug fixes in this release_\n"
+            }
+            ' >> changelog.md
+            
+            echo "" >> changelog.md
+            
+            # Count total commits
+            COMMIT_COUNT=$(git rev-list --count ${PREVIOUS_TAG}..HEAD -- dashboard/)
+          fi
+          
+          echo "commit_count=${COMMIT_COUNT}" >> $GITHUB_OUTPUT
+          
+          echo "========================================="
+          echo "Generated Changelog Preview:"
+          echo "========================================="
+          cat changelog.md
+          echo "========================================="
+
       - name: Generate Release Notes
         id: release_notes
         run: |
           # Create release notes
-          cat > release_notes.md << 'EOF'
+          cat > release_notes.md << EOF
           ## SWIFT Dashboard Plugin Release ${{ needs.build-dashboard.outputs.version }}
           
-          ### 📚 Documentation & Support
+          ### About This Release
           
-          - **📖 Setup Guide**: [Dashboard Documentation](https://github.com/${{ github.repository }}/blob/main/dashboard/README.md)
-          - **🔧 Translator Integration**: [FTP/SFTP Guide](https://github.com/${{ github.repository }}/blob/main/translator/integrations/ftp-sftp/README.md)
-          - **🐛 Issues**: [GitHub Issues](https://github.com/${{ github.repository }}/issues)
-          - **💬 Support**: [GitHub Discussions](https://github.com/${{ github.repository }}/discussions)
+          This release contains the SWIFT Dashboard plugin for OpenSearch Dashboards with enhanced features and improvements.
           
-          ### 💾 Download Assets
+          ### 🎯 Key Features
+          - ✅ Real-time message monitoring and analytics
+          - ✅ Interactive charts and visualizations
+          - ✅ Advanced search and filtering capabilities
+          - ✅ Message translation comparison views
+          - ✅ Error analysis and reporting
+          - ✅ Currency and transaction insights
           
-          | File | Description |
-          |------|-------------|
-          | `swift-dashboard-${{ needs.build-dashboard.outputs.version }}.zip` | Dashboard plugin package for OpenSearch Dashboards |
-          | `checksums.txt` | SHA256 checksums for verification |
+          ### 📊 Release Statistics
+          - **Commits in this release:** ${{ steps.changelog.outputs.commit_count }}
+          - **Build date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          - **Node.js version:** ${{ env.NODE_VERSION }}
+          - **OpenSearch Dashboards compatibility:** 2.19.0+
           
-          ---
-          **Build Information**
-          - **Version**: ${{ needs.build-dashboard.outputs.version }}
-          - **Build Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          - **Commit**: [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-          - **Workflow**: [Build #${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          - **OpenSearch Compatibility**: 2.19.0+
           EOF
           
-          echo "release_notes_file=release_notes.md" >> $GITHUB_OUTPUT
+          # Append the generated changelog
+          cat changelog.md >> release_notes.md
           
-      - name: Create GitHub Release
+          # Add installation and usage information
+          cat >> release_notes.md << 'EOF'
+          
+          ---
+          
+          ## 🔗 Resources
+          
+          - 📖 [Dashboard Documentation](https://github.com/${{ github.repository }}/blob/main/dashboard/README.md)
+          - 🔧 [Translator Integration Guide](https://github.com/${{ github.repository }}/blob/main/translator/integrations/ftp-sftp/README.md)
+          - 🐛 [Report Issues](https://github.com/${{ github.repository }}/issues)
+          - 💬 [Discussions](https://github.com/${{ github.repository }}/discussions)
+          
+          ## 🔒 Security
+          
+          This release has been scanned for security vulnerabilities using Trivy. See the Security tab for detailed scan results.
+          
+          ## 💾 Download Assets
+          
+          | File | Description | SHA256 |
+          |------|-------------|--------|
+          | swift-dashboard-${{ needs.build-dashboard.outputs.version }}.zip | Dashboard plugin package | See checksums.txt |
+          | checksums.txt | SHA256 checksums for verification | - |
+          
+          ### Verify Download Integrity
+          
+          ```bash
+          sha256sum -c checksums.txt
+          ```
+          
+          ## 🙏 Contributors
+          
+          Thank you to all contributors who made this release possible!
+          
+          ---
+          
+          **Full Changelog:** [${{ steps.previous_tag.outputs.previous_tag }}...${{ needs.build-dashboard.outputs.tag }}](https://github.com/${{ github.repository }}/compare/${{ steps.previous_tag.outputs.previous_tag }}...${{ needs.build-dashboard.outputs.tag }})
+          
+          **Build Info:**
+          - Commit: [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          - Workflow Run: [#${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOF
+          
+          echo "========================================="
+          echo "Full Release Notes Preview:"
+          echo "========================================="
+          cat release_notes.md
+          echo "========================================="
+          
+      - name: Create GitHub Release (Draft for Review)
+        if: steps.changelog.outputs.using_custom_changelog == 'false' && github.event.inputs.skip_approval != 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build-dashboard.outputs.tag }}
+          name: "SWIFT Dashboard Plugin ${{ needs.build-dashboard.outputs.version }}"
+          body_path: release_notes.md
+          draft: true
+          prerelease: ${{ contains(needs.build-dashboard.outputs.version, '-') }}
+          files: |
+            release/swift-dashboard-${{ needs.build-dashboard.outputs.version }}.zip
+            release/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release (Published)
+        if: steps.changelog.outputs.using_custom_changelog == 'true' || github.event.inputs.skip_approval == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.build-dashboard.outputs.tag }}
@@ -298,11 +449,29 @@ jobs:
           files: |
             release/swift-dashboard-${{ needs.build-dashboard.outputs.version }}.zip
             release/checksums.txt
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
+      - name: Notify Draft Created
+        if: steps.changelog.outputs.using_custom_changelog == 'false' && github.event.inputs.skip_approval != 'true'
+        run: |
+          echo "📝 Draft release created for review"
+          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build-dashboard.outputs.tag }}"
+          echo ""
+          echo "⚠️ IMPORTANT: Please review the draft release and publish it manually when ready."
+          echo ""
+          echo "To publish the release:"
+          echo "1. Go to: https://github.com/${{ github.repository }}/releases"
+          echo "2. Find the draft release for ${{ needs.build-dashboard.outputs.tag }}"
+          echo "3. Review the changelog and release notes"
+          echo "4. Click 'Edit' to make any changes"
+          echo "5. Click 'Publish release' when satisfied"
+          echo ""
+          echo "💡 TIP: You can edit the changelog directly in the GitHub UI before publishing!"
+
       - name: Update Latest Release Info
-        if: ${{ !contains(needs.build-dashboard.outputs.version, '-') }}
+        if: (steps.changelog.outputs.using_custom_changelog == 'true' || github.event.inputs.skip_approval == 'true') && !contains(needs.build-dashboard.outputs.version, '-')
         run: |
           echo "✅ Released dashboard version ${{ needs.build-dashboard.outputs.version }} as latest"
           echo "📁 Dashboard artifacts uploaded successfully"
@@ -312,7 +481,7 @@ jobs:
     name: Bump Version After Release
     runs-on: ubuntu-latest
     needs: [build-dashboard, release]
-    if: needs.release.result == 'success' && !contains(needs.build-dashboard.outputs.version, '-')
+    if: needs.release.result == 'success' && !contains(needs.build-dashboard.outputs.version, '-') && (github.event.inputs.changelog_url != '' || github.event.inputs.skip_approval == 'true')
     
     steps:
       - name: Checkout Repository
@@ -439,8 +608,6 @@ jobs:
           if [[ "${{ needs.build-dashboard.outputs.yarn_lock_updated }}" == "true" ]]; then
             echo "Adding updated yarn.lock to commit"
             git add ${{ env.DASHBOARD_PATH }}/yarn.lock
-          else
-            echo "yarn.lock not updated, skipping"
           fi
           
           # Show what will be committed
@@ -516,18 +683,11 @@ jobs:
           
           if [[ -n "$EXISTING_PR" ]]; then
             echo "Updating existing PR #$EXISTING_PR"
-            gh pr edit "$EXISTING_PR" \
-              --title "$PR_TITLE" \
-              --body "$PR_BODY"
+            gh pr edit "$EXISTING_PR" --title "$PR_TITLE" --body "$PR_BODY"
             echo "✅ Pull request #$EXISTING_PR updated for dashboard version bump"
           else
             echo "Creating new PR"
-            gh pr create \
-              --title "$PR_TITLE" \
-              --body "$PR_BODY" \
-              --head "${{ steps.create_branch.outputs.branch_name }}" \
-              --base "main" \
-              --label "automated"
+            gh pr create --title "$PR_TITLE" --body "$PR_BODY" --head "${{ steps.create_branch.outputs.branch_name }}" --base "main" --label "automated"
             echo "✅ New pull request created for dashboard version bump"
           fi
 
@@ -538,23 +698,29 @@ jobs:
     if: always() && needs.build-dashboard.result == 'success'
     
     steps:
+      - name: Notify Draft Created
+        if: needs.release.result == 'success' && github.event.inputs.changelog_url == '' && github.event.inputs.skip_approval != 'true'
+        run: |
+          echo "📝 Draft release created for SWIFT Dashboard Plugin ${{ needs.build-dashboard.outputs.version }}"
+          echo "🔗 Review and publish at: https://github.com/${{ github.repository }}/releases"
+          echo ""
+          echo "⚠️ The release is currently in DRAFT mode"
+          echo "📋 Please review the changelog before publishing"
+          echo "✏️ You can edit the release notes directly in GitHub"
+          echo "🚀 Publish when ready to make it available"
+
       - name: Notify Success
-        if: needs.release.result == 'success'
+        if: needs.release.result == 'success' && (github.event.inputs.changelog_url != '' || github.event.inputs.skip_approval == 'true')
         run: |
           echo "🎉 Successfully released SWIFT Dashboard Plugin ${{ needs.build-dashboard.outputs.version }}"
           echo "📦 Download: https://github.com/${{ github.repository }}/releases/tag/${{ needs.build-dashboard.outputs.tag }}"
           
           if [[ "${{ needs.version-bump.result }}" == "success" ]]; then
             echo "🔢 Version bump PR created for next development cycle"
-            echo "📝 Review and merge the version bump PR to complete the release process"
-          elif [[ "${{ needs.version-bump.result }}" == "skipped" ]]; then
-            echo "⏭️ Version bump skipped (pre-release or manual trigger)"
-          else
-            echo "⚠️ Version bump failed - may need manual intervention"
           fi
           
       - name: Notify Build Only
         if: needs.release.result == 'skipped'
         run: |
           echo "✅ Dashboard build completed successfully for version ${{ needs.build-dashboard.outputs.version }}"
-          echo "💡 To create a release, push a version tag (v1.0.0) or use workflow_dispatch with create_release=true"
+          echo "💡 To create a release, push a version tag or use workflow_dispatch with create_release=true"
