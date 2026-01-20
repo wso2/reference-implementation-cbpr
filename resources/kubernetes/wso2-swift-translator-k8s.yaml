@@ -1,0 +1,475 @@
+# --------------------------------------------------------------------------
+# A. Fluent Bit ConfigMap
+# --------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentbit-translator-config
+  labels:
+    app: swift-translator
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         5    # Flush every 5 seconds
+        Log_Level     info
+        Parsers_File  /fluent-bit/config/parsers.conf 
+        Daemon        off  # Essential for sidecar operation
+
+    # Input 1: Read logs from the main translator app
+    [INPUT]
+        Name             tail
+        Tag              logs
+        Path             /var/log/app/ballerina-logs/ballerina*.log
+        Parser           ballerina_json_parser
+        Refresh_Interval 1
+        exit_on_eof      off
+        Mem_Buf_Limit 5MB
+
+    [OUTPUT]
+        Name            opensearch
+        Match           logs
+        Host            opensearch-svc
+        Port            9200
+        HTTP_User       admin
+        HTTP_Passwd     ${OS_USER}
+        Index           ${OS_PASS}
+        Suppress_Type_Name On
+        Logstash_Format Off
+        Time_Key        time
+        Generate_ID     On
+        tls             On
+        tls.verify      Off
+
+    [INPUT]
+        Name             tail
+        Tag              mtmx
+        Path             /var/log/app/dashboard-logs/dashboard*.log
+        Parser           json
+        Refresh_Interval 1
+        exit_on_eof      off
+
+    [OUTPUT]
+        Name            opensearch
+        Match           mtmx
+        Host            opensearch-svc
+        Port            9200
+        HTTP_User       ${OS_USER}
+        HTTP_Passwd     ${OS_PASS}
+        Index           translated_log
+        Suppress_Type_Name On
+        Logstash_Format Off
+        Time_Key        @timestamp
+        Generate_ID     On
+        tls             On
+        tls.verify      Off
+  parsers.conf: |
+    [PARSER]
+        Name        docker
+        Format      json
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S %z
+
+    [PARSER]
+        Name        ballerina_json_parser
+        Format      json
+        Time_Key    time                # The field in your JSON containing the timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z # The format of that timestamp string
+        Time_Keep   On                  # Keep the original 'time' field
+        
+    [PARSER]
+        Name   json
+        Format json
+        Time_Key time
+        Time_Format %d/%b/%Y:%H:%M:%S %z
+---
+# --------------------------------------------------------------------------
+# B. Translator Deployment (Three-Container Pod)
+# --------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swift-translator-deployment
+  labels:
+    app: swift-translator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: swift-translator
+  template:
+    metadata:
+      labels:
+        app: swift-translator
+    spec:
+      securityContext:
+          runAsUser: 0
+          fsGroup: 1000
+      volumes:
+      # 1. shared-logs: A temporary volume for log files
+      - name: shared-logs
+        emptyDir: {}
+        
+      # 2. fluentbit-config-volume: To mount the ConfigMap file
+      - name: fluentbit-config-volume
+        configMap:
+          name: fluentbit-translator-config
+          items:
+          - key: fluent-bit.conf
+            path: fluent-bit.conf
+          - key: parsers.conf
+            path: parsers.conf
+      # 3. app-config-volume: To mount the application Config.toml file
+      - name: app-config-volume
+        configMap:
+          name: translator-config
+          items:
+          - key: Config.toml
+            path: Config.toml
+
+      initContainers:
+        - name: fix-log-permissions
+          image: busybox:1.36
+          command: ["sh", "-c", "chmod -R 777 /var/log/app; chmod -R 777 /var/log/ext"]
+          volumeMounts:
+          - name: shared-logs
+            mountPath: /var/log/app
+          - name: shared-logs
+            mountPath: /var/log/ext
+             
+      containers:
+      # --- 1. TRANSLATOR CONTAINER ---
+      - name: translator-main
+        image: <your-registry>/swift-translator:latest # Update registry name
+        workingDir: /app
+        command: ["/bin/sh", "-c"]
+        args:
+          - >
+            java
+            -Dlog.path=/var/log/app/translator.log
+            -Dconfig.file=/app/Config.toml
+            -jar /app/swiftMtMxTranslator.jar
+        ports:
+        - containerPort: 8080
+        
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/app # Translator writes logs here
+
+        - name: app-config-volume
+          mountPath: /app/Config.toml
+          subPath: Config.toml
+          
+        # 🟢 LIVENESS PROBE (on /healthz, port 8080)
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 3
+          
+        # 🟡 READINESS PROBE (on /healthz, port 8080)
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 1
+
+      # --- 2. EXTENSIONS (Sidecar 1) CONTAINER ---
+      - name: translator-extensions
+        image: <your-registry>/swift-translator:latest # Update registry name
+        workingDir: /app
+        command: ["java", "-Dlog.path=/var/log/ext/extensions.log", "-jar", "extensions.jar"]
+        ports:
+        - containerPort: 8081
+        
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/ext # Extensions app writes logs here
+          
+      # --- 3. FLUENT BIT (Sidecar 2) CONTAINER ---
+      - name: fluentbit-sidecar
+        image: fluent/fluent-bit:latest
+        command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/config/fluent-bit.conf"]
+        env:
+        # Inject the OpenSearch username from the Secret
+        - name: OS_USER
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-auth
+              key: username
+        # Inject the OpenSearch password from the Secret
+        - name: OS_PASS
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-auth
+              key: password
+        # Fluent Bit reads the shared log files and sends them to OpenSearch
+        volumeMounts:
+        # Read the logs from the shared volume
+        - name: shared-logs
+          mountPath: /var/log/app
+        # Provide the Fluent Bit configuration
+        - name: fluentbit-config-volume
+          mountPath: /fluent-bit/config
+
+---
+
+# --------------------------------------------------------------------------
+# C. PVCs: Storage for the two data nodes
+# --------------------------------------------------------------------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opensearch-data1-claim
+  labels:
+    app: opensearch-node
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opensearch-data2-claim
+  labels:
+    app: opensearch-node
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+
+# --------------------------------------------------------------------------
+# D. Data Node 1 Deployment (Manager Node)
+# --------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch-node1-deployment
+  labels:
+    app: opensearch-node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opensearch-node
+      node: opensearch-node1
+  template:
+    metadata:
+      labels:
+        app: opensearch-node
+        node: opensearch-node1
+    spec:
+      volumes:
+        - name: opensearch-data1
+          persistentVolumeClaim:
+            claimName: opensearch-data1-claim
+      containers:
+        - name: opensearch-node1
+          image: opensearchproject/opensearch:2.19.0
+          ports:
+            - containerPort: 9200
+              name: http
+            - containerPort: 9300
+              name: transport
+          env:
+            - name: cluster.name
+              value: opensearch-cluster
+            - name: node.name
+              value: opensearch-node1
+            - name: discovery.seed_hosts
+              value: opensearch-headless 
+            - name: cluster.initial_cluster_manager_nodes
+              value: opensearch-node1,opensearch-node2 
+            - name: bootstrap.memory_lock
+              value: "false"
+            - name: OPENSEARCH_JAVA_OPTS
+              value: -Xms512m -Xmx512m
+            - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opensearch-auth
+                  key: password
+            - name: plugins.security.ssl.http.enabled
+              value: "true"
+            - name: plugins.security.allow_unsafe_democertificates
+              value: "true"
+            - name: plugins.security.allow_default_init_securityindex
+              value: "true"
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: opensearch-data1
+              mountPath: /usr/share/opensearch/data
+---
+# --------------------------------------------------------------------------
+# E. Data Node 2 Deployment
+# --------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch-node2-deployment
+  labels:
+    app: opensearch-node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opensearch-node
+      node: opensearch-node2
+  template:
+    metadata:
+      labels:
+        app: opensearch-node
+        node: opensearch-node2
+    spec:
+      volumes:
+        - name: opensearch-data2
+          persistentVolumeClaim:
+            claimName: opensearch-data2-claim
+      containers:
+        - name: opensearch-node2
+          image: opensearchproject/opensearch:2.19.0
+          ports:
+            - containerPort: 9200
+              name: http
+            - containerPort: 9300
+              name: transport
+          env:
+            - name: cluster.name
+              value: opensearch-cluster
+            - name: node.name
+              value: opensearch-node2
+            - name: discovery.seed_hosts
+              value: opensearch-headless 
+            - name: cluster.initial_cluster_manager_nodes
+              value: opensearch-node1,opensearch-node2 
+            - name: bootstrap.memory_lock
+              value: "false"
+            - name: OPENSEARCH_JAVA_OPTS
+              value: -Xms512m -Xmx512m
+            - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opensearch-auth
+                  key: password
+            - name: plugins.security.ssl.http.enabled
+              value: "true"
+            - name: plugins.security.allow_unsafe_democertificates
+              value: "true"
+            - name: plugins.security.allow_default_init_securityindex
+              value: "true"
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: opensearch-data2
+              mountPath: /usr/share/opensearch/data
+---
+# --------------------------------------------------------------------------
+# F. Dashboard Deployment
+# --------------------------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swift-dashboard-deployment
+  labels:
+    app: opensearch-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opensearch-dashboard
+  template:
+    metadata:
+      labels:
+        app: opensearch-dashboard
+    spec:
+      containers:
+        - name: opensearch-dashboards
+          image: <your-registry>/swift-dashboard:latest # Update registry name
+          ports:
+            - containerPort: 5601
+          env:
+            - name: OPENSEARCH_HOSTS
+              value: '["https://opensearch-svc:9200"]'
+            - name: OPENSEARCH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: opensearch-auth
+                  key: username
+            - name: OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opensearch-auth
+                  key: password
+            - name: OPENSEARCH_SSL_VERIFICATIONMODE
+              value: "none"
+            - name: DISABLE_SECURITY_DASHBOARDS_PLUGIN
+              value: "false"
+---
+# --------------------------------------------------------------------------
+# G. Service Definitions
+# --------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-svc
+  labels:
+    app: opensearch
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9200
+    targetPort: 9200
+    protocol: TCP
+  selector:
+    app: opensearch-node
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-headless
+  labels:
+    app: opensearch-node
+spec:
+  clusterIP: None
+  ports:
+    - port: 9200
+      name: rest
+    - port: 9300
+      name: transport
+  selector:
+    app: opensearch-node
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-dashboard-svc
+spec:
+  type: NodePort
+  ports:
+  - port: 5601
+    targetPort: 5601
+    nodePort: 31709
+    protocol: TCP
+  selector:
+    app: opensearch-dashboard
