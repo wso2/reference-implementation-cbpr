@@ -102,6 +102,10 @@
     background-color: $failure-color;
   }
   
+  .count-item.skipped {
+    background-color: $skipped-color;
+  }
+  
   /* Header within count items */
   .count-header {
     display: flex;

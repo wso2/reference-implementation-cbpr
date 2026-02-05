@@ -21,7 +21,8 @@ import './commonStyles.scss';
 
 const MessageCounts: React.FC<MessageCountsProps> = ({ successCount, failCount, timeSpecificData, direction }) => {
   // Use timeSpecificData if provided, otherwise use the passed-in counts
-  const total = timeSpecificData ? timeSpecificData.totalCount : (successCount + failCount);
+  const skipped = timeSpecificData ? timeSpecificData.skippedCount : 0;
+  const total = timeSpecificData ? timeSpecificData.totalCount : (successCount + failCount + skipped);
   const success = timeSpecificData ? timeSpecificData.successCount : successCount;
   const fail = timeSpecificData ? timeSpecificData.failCount : failCount;
   const inward = timeSpecificData ? timeSpecificData.inwardCount : 0;
@@ -29,6 +30,7 @@ const MessageCounts: React.FC<MessageCountsProps> = ({ successCount, failCount, 
   
   const successPercentage = total > 0 ? Math.round((success / total) * 100) : 0;
   const failPercentage = total > 0 ? Math.round((fail / total) * 100) : 0;
+  const skippedPercentage = total > 0 ? Math.round((skipped / total) * 100) : 0;
   const inwardPercentage = total > 0 ? Math.round((inward / total) * 100) : 0;
   const outwardPercentage = total > 0 ? Math.round((outward / total) * 100) : 0;
   
@@ -64,7 +66,7 @@ const MessageCounts: React.FC<MessageCountsProps> = ({ successCount, failCount, 
         </div>
       )}
       
-      {/* Success/Failure breakdown */}
+      {/* Success/Failure/Skipped breakdown */}
       <div className="counts-row">
         <div className="count-item success">
           <div className="count-header">
@@ -81,6 +83,14 @@ const MessageCounts: React.FC<MessageCountsProps> = ({ successCount, failCount, 
           </div>
           <div className="count-value">{fail}</div>
           <div className="count-percentage">{failPercentage}%</div>
+        </div>
+        <div className="count-item skipped">
+          <div className="count-header">
+            <div className="count-indicator skipped"></div>
+            <span className="count-name">Skipped</span>
+          </div>
+          <div className="count-value">{skipped}</div>
+          <div className="count-percentage">{skippedPercentage}%</div>
         </div>
       </div>
     </div>
