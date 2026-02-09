@@ -230,6 +230,7 @@ const Table: React.FC<TableProps> = ({
                                     <option value="">All</option>
                                     <option value="Successful">Successful</option>
                                     <option value="Failed">Failed</option>
+                                    <option value="Skipped">Skipped</option>
                                 </select>
                             )}
                         </th>
