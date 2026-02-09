@@ -376,7 +376,7 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
       <div className="chart-component">
         <div className="chart-header">
           <h3>Messages By Completion</h3>
-          <div className="chart-info-icon pie" data-tooltip="Shows the distribution of messages by status (Success/Failure) based on your selected time period and direction filters">
+          <div className="chart-info-icon pie" data-tooltip="Shows the distribution of messages by status (Success/Failure/Skipped) based on your selected time period and direction filters">
             <span className="info-icon">i</span>
           </div>
         </div>
@@ -517,7 +517,7 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
       <div className="chart-component">
         <div className="chart-header">
           <h3>Messages By Completion</h3>
-          <div className="chart-info-icon pie" data-tooltip="Shows the distribution of messages by status (Success/Failure) based on your selected time period and direction filters">
+          <div className="chart-info-icon pie" data-tooltip="Shows the distribution of messages by status (Success/Failure/Skipped) based on your selected time period and direction filters">
             <span className="info-icon">i</span>
           </div>
         </div>
