@@ -339,11 +339,24 @@ A comprehensive OpenSearch-based dashboard for monitoring and analyzing SWIFT MT
    yarn osd bootstrap
    ```
 
-2. **Clone Dashboard Plugin Source**
+2. **Clone and Copy Dashboard Plugin Source**
+
    ```bash
-   cd plugins/
+   # Clone the repository (outside plugins directory)
    git clone https://github.com/wso2/reference-implementation-cbpr.git
-   cd reference-implementation-cbpr/dashboard/swift_dashboard/
+   
+   # Copy only swift_dashboard into plugins folder
+   cp -r reference-implementation-cbpr/dashboard/swift_dashboard plugins/
+   
+   cd plugins/swift_dashboard
+   ```
+
+   Final structure:
+   ```
+   OpenSearch-Dashboards/
+   ├── plugins/
+   │   └── swift_dashboard/   ← Plugin is now in correct location
+   └── reference-implementation-cbpr/   (can be deleted)
    ```
 
 3. **Build Plugin**

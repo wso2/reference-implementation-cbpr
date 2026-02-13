@@ -214,12 +214,12 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
    */
   const generateCompletionPieChartData = () => {
     return {
-      labels: ['Successful', 'Failure'],
+      labels: ['Successful', 'Failure', 'Skipped'],
       datasets: [
         {
           label: 'Messages',
-          data: [timeSpecificData?.successCount || 0, timeSpecificData?.failCount || 0],
-          backgroundColor: ['#6BAE92', '#D7796B'],
+          data: [timeSpecificData?.successCount || 0, timeSpecificData?.failCount || 0, timeSpecificData?.skippedCount || 0],
+          backgroundColor: ['#6BAE92', '#D7796B', '#B0B0B0'],
           cutout: '70%',
           radius: '95%',
         },
@@ -316,6 +316,7 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
   
         let successCount = 0;
         let failCount = 0;
+        let skippedCount = 0;
         let inwardCount = 0;
         let outwardCount = 0;
   
@@ -325,6 +326,8 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
             successCount++;
           } else if (msg.status.toLowerCase() === 'failed') {
             failCount++;
+          } else if (msg.status.toLowerCase() === 'skipped') {
+            skippedCount++;
           }
   
           if (msg.direction.toLowerCase() === 'inward') {
@@ -334,19 +337,22 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
           }
         });
         
-        const totalCount = successCount + failCount;
+        const totalCount = successCount + failCount + skippedCount;
         const successPercentage = totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0;
         const failPercentage = totalCount > 0 ? Math.round((failCount / totalCount) * 100) : 0;
+        const skippedPercentage = totalCount > 0 ? Math.round((skippedCount / totalCount) * 100) : 0;
         
         // Set the time-specific data
         setTimeSpecificData({
           successCount,
           failCount,
+          skippedCount,
           inwardCount,
           outwardCount,
           totalCount,
           successPercentage,
           failPercentage,
+          skippedPercentage,
           period: timeSpecificResponse.period,
           date: timeSpecificResponse.date,
           startDate: timeSpecificResponse.startDate,
@@ -370,7 +376,7 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
       <div className="chart-component">
         <div className="chart-header">
           <h3>Messages By Completion</h3>
-          <div className="chart-info-icon pie" data-tooltip="Shows the distribution of messages by status (Success/Failure) based on your selected time period and direction filters">
+          <div className="chart-info-icon pie" data-tooltip="Shows the distribution of messages by status (Success/Failure/Skipped) based on your selected time period and direction filters">
             <span className="info-icon">i</span>
           </div>
         </div>
@@ -424,6 +430,10 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
               <div className="legend-color inner failure"></div>
               <div className="legend-label">Failure</div>
             </div>
+            <div className="legend-item">
+              <div className="legend-color inner skipped"></div>
+              <div className="legend-label">Skipped</div>
+            </div>
           </div>) : (
             <div className="single-line-legend">
             <div className="legend-item">
@@ -433,6 +443,10 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
             <div className="legend-item">
               <div className="legend-color inner failure"></div>
               <div className="legend-label">Failure</div>
+            </div>
+            <div className="legend-item">
+              <div className="legend-color inner skipped"></div>
+              <div className="legend-label">Skipped</div>
             </div>
           </div>
           )}
@@ -503,7 +517,7 @@ const ChartComponent = ({ type, period, direction }: ChartComponentProps): React
       <div className="chart-component">
         <div className="chart-header">
           <h3>Messages By Completion</h3>
-          <div className="chart-info-icon pie" data-tooltip="Shows the distribution of messages by status (Success/Failure) based on your selected time period and direction filters">
+          <div className="chart-info-icon pie" data-tooltip="Shows the distribution of messages by status (Success/Failure/Skipped) based on your selected time period and direction filters">
             <span className="info-icon">i</span>
           </div>
         </div>

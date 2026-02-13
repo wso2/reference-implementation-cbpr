@@ -75,11 +75,13 @@ export interface DirectionStats {
 export interface TimeSpecificData {
     successCount: number;
     failCount: number;
+    skippedCount: number;
     inwardCount: number;
     outwardCount: number;
     totalCount: number;
     successPercentage: number;
     failPercentage: number;
+    skippedPercentage: number;
     period: string;
     date?: string; // For daily
     startDate?: string; // For weekly/monthly
