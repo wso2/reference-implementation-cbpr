@@ -79,11 +79,11 @@ function moesif_transform(tag, timestamp, record)
 
     -- 2. Normalize Status
     local statusNorm = string.lower(status)
-    local httpStatus = 500
+    local httpStatus = 400
     if statusNorm == "successful" then
         httpStatus = 200
     elseif statusNorm == "skipped" then
-        httpStatus = 422
+        httpStatus = 202
     end
 
     -- 3. Detect Message Content and Get Content-Type

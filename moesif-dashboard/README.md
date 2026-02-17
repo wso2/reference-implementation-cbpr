@@ -397,11 +397,11 @@ function moesif_transform(tag, timestamp, record)
 
     -- 2. Normalize Status
     local statusNorm = string.lower(status)
-    local httpStatus = 500
+    local httpStatus = 400
     if statusNorm == "successful" then
         httpStatus = 200
     elseif statusNorm == "skipped" then
-        httpStatus = 422
+        httpStatus = 202
     end
 
     -- 3. Detect Message Content and Get Content-Type
@@ -720,7 +720,7 @@ This section explains how Dashboard logs and Ballerina logs are transformed, map
 | `amount` | `metadata.amount` | Transaction amount |
 | `direction` | `metadata.direction` | Message direction |
 | `statusNorm` | `metadata.status_text`, `response.status` | Status (normalized), HTTP status |
-| `status` | `response.status` | HTTP status code (200=successful, 422=skipped, 500=failed) |
+| `status` | `response.status` | HTTP status code (200=successful, 202=skipped, 400=failed) |
 | `fieldError` | `metadata.field_error` | Field error details |
 | `notSupportedError` | `metadata.not_supported_error` | Not supported error details |
 | `invalidError` | `metadata.invalid_error` | Invalid error details |
@@ -822,9 +822,9 @@ To distinguish between log types, filter by `metadata.event_kind`:
 - Dashboard logs contain base64-encoded messages (request and response bodies)
 - Ballerina logs contain plain text messages for easier readability
 - HTTP status codes for dashboard logs:
-  - **200**: Successful translation
-  - **422**: Skipped translation
-  - **500**: Failed translation
+  - **200**: Successful translation (200 OK)
+  - **202**: Skipped translation (202 Accepted)
+  - **400**: Failed translation (400 Bad Request)
 - All timestamps are in ISO8601 format
 
 ---
