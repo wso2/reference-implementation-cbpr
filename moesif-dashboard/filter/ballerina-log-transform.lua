@@ -48,12 +48,6 @@ function extractListenerName(module)
     if module == nil or module == "" then
         return "Unknown"
     end
-
-    -- If it contains "Listener", return as-is
-    if string.find(module, "Listener") then
-        return module
-    end
-
-    -- Otherwise return module name
+    
     return module
 end

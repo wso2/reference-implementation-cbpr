@@ -219,7 +219,7 @@ This section guides you through configuring Fluent Bit to collect SWIFT logs and
 ```bash
 curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
 
-# Or download from:https://fluentbit.io/download/
+# Or download from: https://fluentbit.io/download/
 # Extract and install according to your platform
 ```
 
@@ -316,6 +316,7 @@ curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
 ### Step 4: Create Dashboard Log Transform (`dashboard-log-transform.lua`)
 
 ```lua
+-- Remove leading and trailing quotes from a string
 local function strip_quotes(s)
     if type(s) == "string" then
         return s:gsub('^"(.*)"$', '%1')
@@ -339,22 +340,43 @@ function enc(data)
 end
 
 local function detectXml(message)
-    if not message or message == "" then return false end
+    if not message or message == "" then
+        return false
+    end
     local msg = tostring(message)
-    if msg:match("^%s*<[%s%S]*>") then return true end
-    if msg:find("<?xml", 1, true) then return true end
-    if msg:find("<Envelope", 1, true) then return true end
-    if msg:find("<Document", 1, true) then return true end
-    if msg:match("^%s*<") then return true end
+    -- Pattern 1: Starts with < and contains >
+    if msg:match("^%s*<[%s%S]*>") then
+        return true
+    end
+    -- Pattern 2: Contains XML declaration
+    if msg:find("<?xml", 1, true) then
+        return true
+    end
+    -- Pattern 3: Contains SOAP Envelope
+    if msg:find("<Envelope", 1, true) then
+        return true
+    end
+    -- Pattern 4: Contains ISO 20022 Document
+    if msg:find("<Document", 1, true) then
+        return true
+    end
+    -- Pattern 5: Simple check - starts with <
+    if msg:match("^%s*<") then
+        return true
+    end
     return false
 end
 
 local function getContentType(message)
-    if detectXml(message) then return "application/xml"
-    else return "text/plain" end
+    if detectXml(message) then
+        return "application/xml"
+    else
+        return "text/plain"
+    end
 end
 
 function moesif_transform(tag, timestamp, record)
+    -- 1. Extract Raw Values
     local fileId = record["id"] or ""
     local refId = record["refId"] or ""
     local user_id = "UNKNOWN"
@@ -369,16 +391,30 @@ function moesif_transform(tag, timestamp, record)
     local log_date = record["date"] or os.date("!%Y-%m-%dT%H:%M:%SZ", timestamp)
 
     local originalMsg = record["originalMessage"] or ""
-    local translatedMsg = strip_quotes(record["translatedMessage"] or "N/A")
+    local translatedMsg = record["translatedMessage"] or "N/A"
+    -- Remove extra quotes from translatedMsg if present
+    translatedMsg = strip_quotes(translatedMsg)
 
+    -- 2. Normalize Status
     local statusNorm = string.lower(status)
     local httpStatus = 500
-    if statusNorm == "successful" then httpStatus = 200
-    elseif statusNorm == "skipped" then httpStatus = 422 end
+    if statusNorm == "successful" then
+        httpStatus = 200
+    elseif statusNorm == "skipped" then
+        httpStatus = 422
+    end
 
+    -- 3. Detect Message Content and Get Content-Type
     local reqContentType = getContentType(originalMsg)
     local resContentType = getContentType(translatedMsg)
+    local reqEncoding = "base64"
+    local resEncoding = "base64"
 
+    -- 4. Encode Messages
+    local reqBody = enc(originalMsg)
+    local resBody = enc(translatedMsg)
+
+    -- 5. Construct Metadata
     local metadata = {
         event_kind = "dashboard_log",
         source_file = fileId,
@@ -396,26 +432,32 @@ function moesif_transform(tag, timestamp, record)
         other_error = record["otherError"] or ""
     }
 
+    -- 6. Build Final Moesif Record
     local moesif_record = {
         request = {
             time = log_date,
             uri = "/swift-translation",
             verb = "POST",
-            headers = { ["Content-Type"] = reqContentType },
-            body = enc(originalMsg),
-            transfer_encoding = "base64"
+            headers = {
+                ["Content-Type"] = reqContentType
+            },
+            body = reqBody,
+            transfer_encoding = reqEncoding
         },
         response = {
             time = log_date,
             status = httpStatus,
-            headers = { ["Content-Type"] = resContentType },
-            body = enc(translatedMsg),
-            transfer_encoding = "base64"
+            headers = {
+                ["Content-Type"] = resContentType
+            },
+            body = resBody,
+            transfer_encoding = resEncoding
         },
         user_id = user_id,
         metadata = metadata
     }
 
+    -- Return: Code 2 (Replace Record), Timestamp, New Record
     return 2, timestamp, moesif_record
 end
 ```
@@ -425,20 +467,17 @@ end
 ### Step 5: Create Ballerina Log Transform (`ballerina-log-transform.lua`)
 
 ```lua
-function extractListenerName(module)
-    if module == nil or module == "" then return "Unknown" end
-    if string.find(module, "Listener") then return module end
-    return module
-end
-
 function ballerina_transform(tag, timestamp, record)
+    -- Extract fields from Ballerina log record
     local time = record["time"] or os.date("!%Y-%m-%dT%H:%M:%S.000Z")
     local level = record["level"] or "INFO"
     local module = record["module"] or "unknown"
     local message = record["message"] or ""
 
+    -- Extract listener name from module
     local listenerName = extractListenerName(module)
 
+    -- Build metadata object with Ballerina-specific fields
     local metadata = {
         event_kind = "ballerina_log",
         log_level = level,
@@ -448,13 +487,16 @@ function ballerina_transform(tag, timestamp, record)
         timestamp = time
     }
 
+    -- Build Moesif event for Ballerina log
     local moesif_record = {
         timestamp = time,
         request = {
             time = time,
             uri = "/ballerina/logs",
             verb = "LOG",
-            headers = { ["Content-Type"] = "text/plain" },
+            headers = {
+                ["Content-Type"] = "text/plain"
+            },
             body = ""
         },
         response = {
@@ -466,7 +508,17 @@ function ballerina_transform(tag, timestamp, record)
         metadata = metadata
     }
 
+    -- Return: code 2 (modify record), timestamp, moesif_record
     return 2, timestamp, moesif_record
+end
+
+-- Extract listener name from module string
+function extractListenerName(module)
+    if module == nil or module == "" then
+        return "Unknown"
+    end
+    
+    return module
 end
 ```
 
