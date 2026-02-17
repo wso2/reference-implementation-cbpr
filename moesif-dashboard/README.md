@@ -644,6 +644,58 @@ Your imported dashboard will include multiple workspaces and visualizations:
 
 ![Field Comparison View](images/field-comparison-view.png)
 
+### Step 4: Finding and Viewing Transactions
+
+#### Suppose you want to find out the transaction ID and view that in the Message Comparison view
+
+**Workflow:**
+
+1. **View All Transactions**
+   - Navigate to **Original/Translated Message Comparison** dashboard
+   - See all transactions listed with their status codes (202, 200, 400, etc.)
+
+![Message Comparison List](images/message-comparison-list.png)
+
+2. **Apply Filters to Find Specific Transaction**
+   - Click on the **Filters** section to expand filter options
+   - Use **Events Where** to filter by metadata fields:
+
+```
+metadata.event_kind = "dashboard_log"
+metadata.transaction_id = "ia"  (or your specific transaction ID)
+```
+
+![Filter Configuration](images/filter-configuration.png)
+
+3. **View Filter Metadata Options**
+   - Expand the **Metadata** dropdown to see all available fields:
+     - `amount` - Transaction amount
+     - `currency` - Currency code
+     - `date` - Transaction date
+     - `direction` - Message direction (Outward/Inward)
+     - `event_kind` - Event type (dashboard_log/ballerina_log)
+     - `field_error`, `invalid_error` - Error details
+     - `listener_name` - Ballerina listener
+     - `mt_type`, `mx_type` - Message types
+     - `transaction_id` - Transaction reference ID
+
+![Metadata Fields](images/metadata-fields.png)
+
+4. **Select Transaction Row**
+   - Click on a transaction row to expand its details
+   - View the request/response comparison
+
+![Transaction Selected](images/transaction-selected.png)
+
+
+5. **Field Comparison View**
+   - Use **Configure Comparison Fields** button to customize which fields to compare
+   - Compare specific MT and MX fields side-by-side
+
+![Field Comparison Detail](images/field-comparison-detail.png)
+
+---
+
 - **Ballerina Log Viewer**
   - Application-level logs 
   - Log level distribution (INFO, DEBUG, WARN, ERROR)
