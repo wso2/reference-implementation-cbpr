@@ -30,7 +30,7 @@ public function main() returns error? {
     }
 
     // Initialize log rotator for daily log rotation
-    initLogRotator();
+    check initLogRotator();
 
     if mtMxListener.enable {
         // Attach the service to the listener along with the resource path.
