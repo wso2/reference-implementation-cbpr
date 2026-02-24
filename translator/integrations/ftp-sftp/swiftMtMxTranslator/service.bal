@@ -29,7 +29,11 @@ public function main() returns error? {
     }
     
     time:Civil localCivilTime = zone.utcToCivil(time:utcNow());
-    string date = string `${localCivilTime.year}-${localCivilTime.month}-${localCivilTime.day}`;
+    string|error localCivilStr = time:civilToString(localCivilTime);
+    if localCivilStr is error {
+        return localCivilStr;
+    }
+    string date = localCivilStr.substring(0, 10);
     string filePath = log.ballerinaLogFilePath + "/ballerina-" + date + ".log";
     log:Error? outputFile = log:setOutputFile(filePath, log:APPEND);
     if outputFile is log:Error {
