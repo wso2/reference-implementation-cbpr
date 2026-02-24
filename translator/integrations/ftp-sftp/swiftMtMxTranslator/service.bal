@@ -21,8 +21,15 @@ import ballerina/log;
 import ballerina/time;
 
 public function main() returns error? {
-    time:Utc utc = time:utcNow();
-    string date = time:utcToString(utc).substring(0, 10);
+    
+    time:Zone|error zone = time:loadSystemZone();
+    
+    if zone is error {
+        return zone;
+    }
+    
+    time:Civil localCivilTime = zone.utcToCivil(time:utcNow());
+    string date = string `${localCivilTime.year}-${localCivilTime.month}-${localCivilTime.day}`;
     string filePath = log.ballerinaLogFilePath + "/ballerina-" + date + ".log";
     log:Error? outputFile = log:setOutputFile(filePath, log:APPEND);
     if outputFile is log:Error {
