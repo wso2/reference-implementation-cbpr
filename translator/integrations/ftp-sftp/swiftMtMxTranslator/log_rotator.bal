@@ -28,11 +28,16 @@ class LogRotationJob {
 }
 
 // Initialize log rotator to run daily at 12 AM
-public function initLogRotator() {
+public function initLogRotator() returns error? {
     LogRotationJob logRotationJob = new();
     
     // Calculate delay until next 12 AM
-    time:Civil delayUntilMidnight = calculateDelayUntilMidnight();
+    time:Civil|error delayUntilMidnight = calculateDelayUntilMidnight();
+
+    if delayUntilMidnight is error {
+        log:printError("Failed to calculate delay until midnight", err = delayUntilMidnight.toBalString());
+        return delayUntilMidnight;
+    }
     
     // Schedule recurring execution every 24 hours starting from next midnight
     task:JobId|task:Error recurringResult = task:scheduleJobRecurByFrequency(logRotationJob, 86400, maxCount = -1, 
@@ -45,32 +50,32 @@ public function initLogRotator() {
 }
 
 // Calculate civil time for next day 12 AM
-function calculateDelayUntilMidnight() returns time:Civil {
-    time:Utc currentUtc = time:utcNow();
-
-    // Convert to civil time in your local timezone
-    // time:Zone systemZone = check time:loadSystemZone();
-    time:Civil currentCivil = time:utcToCivil(currentUtc);
-
-    // Get the next day's date
-    time:Date nextDayDate = {
-        year: currentCivil.year,
-        month: currentCivil.month,
-        day: currentCivil.day + 1
-    };
+function calculateDelayUntilMidnight() returns time:Civil|error {
     
-    // Create a new civil time for the next day at 12 AM
-    time:Civil nextDay12Am = {
-        year: nextDayDate.year,
-        month: nextDayDate.month,
-        day: nextDayDate.day,
-        hour: 0,
-        minute: 0,
-        second: 0.0,
-        utcOffset: currentCivil.utcOffset
-    };
+    time:Zone|error zone = time:loadSystemZone();
+    if zone is error {
+        return zone;
+    }
 
-    return nextDay12Am;
+    time:Utc nextDayUtc = time:utcAddSeconds(time:utcNow(), 86400);
+    time:Civil nextDayCivil = zone.utcToCivil(nextDayUtc);
+
+    //todo: Add the proper fix after fixing the issue: https://github.com/wso2-enterprise/wso2-integration-internal/issues/4614
+    string|error nextDayCivilStr = time:civilToString(nextDayCivil);
+    if nextDayCivilStr is error {
+        return nextDayCivilStr;
+    }
+
+    time:Civil|error nextDayCivilFromStr = time:civilFromString(nextDayCivilStr);
+    if nextDayCivilFromStr is error {
+        return nextDayCivilFromStr;
+    }
+    
+    nextDayCivilFromStr.hour = 0;
+    nextDayCivilFromStr.minute = 0;
+    nextDayCivilFromStr.second = 0.0;
+    
+    return nextDayCivilFromStr;
 }
 
 // Rotate Ballerina log file by updating the file name with current date
