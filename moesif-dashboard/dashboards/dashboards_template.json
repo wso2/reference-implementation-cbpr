@@ -1,0 +1,1174 @@
+{
+  "dashboards": [
+    {
+      "_id": "69929dac1fbeb875061392ea",
+      "name": "Overview",
+      "dashboard_ids": [],
+      "workspace_ids": [
+        [
+          "69929daf1fbeb875061392f0",
+          "69929db01fbeb875061392f2",
+          "69929db01fbeb875061392f4",
+          "69929db11fbeb875061392f7"
+        ],
+        [
+          "69929db258ec6369326521dd",
+          "69929db258ec6369326521e0"
+        ]
+      ],
+      "parent": null,
+      "sort_order": 2
+    },
+    {
+      "_id": "6992bcb458ec63693265226a",
+      "name": "Translation KPI",
+      "dashboard_ids": [],
+      "workspace_ids": [
+        [],
+        [],
+        [
+          "6992bcb458ec636932652264"
+        ],
+        [
+          "6992bcb458ec636932652265",
+          "6992bcb458ec636932652266",
+          "6992bcb458ec636932652267"
+        ],
+        [
+          "6992bcb458ec636932652268",
+          "6992bcb458ec636932652269"
+        ]
+      ],
+      "parent": null,
+      "sort_order": 3
+    },
+    {
+      "_id": "69929dac58ec6369326521c3",
+      "name": "Messages List",
+      "dashboard_ids": [],
+      "workspace_ids": [
+        [
+          "69929db758ec6369326521ee"
+        ]
+      ],
+      "parent": null,
+      "sort_order": 4
+    },
+    {
+      "_id": "6992c0e41fbeb87506139380",
+      "name": "Original/Translated  Message Comparison",
+      "dashboard_ids": [],
+      "workspace_ids": [
+        [
+          "6992c1a458ec6369326522af"
+        ]
+      ],
+      "parent": null,
+      "sort_order": 4.5
+    },
+    {
+      "_id": "69929dac58ec6369326521c5",
+      "name": "Ballerina Log Viewer",
+      "dashboard_ids": [],
+      "workspace_ids": [
+        [
+          "69929db81fbeb87506139300"
+        ]
+      ],
+      "parent": null,
+      "sort_order": 5
+    }
+  ],
+  "workspaces": [
+    {
+      "_id": "69929daf1fbeb875061392f0",
+      "type": "events",
+      "name": "Message Direction",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "dashboard_log"
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "terms": {
+                "metadata.event_kind.raw": [
+                  "dashboard_log"
+                ]
+              }
+            },
+            "aggs": {
+              "metadata.direction.raw": {
+                "terms": {
+                  "field": "metadata.direction.raw",
+                  "size": 5,
+                  "min_doc_count": 1,
+                  "order": {
+                    "weight|sum": "desc"
+                  },
+                  "missing": "(none)"
+                },
+                "aggs": {
+                  "weight|sum": {
+                    "sum": {
+                      "field": "weight",
+                      "missing": 1
+                    }
+                  }
+                }
+              },
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&seg[groups][0][field]=metadata.direction.raw&seg[groups][0][func]=terms&seg[groups][0][by]=metric&seg[metrics][0][metricName]=sum%28events%29&seg[chartType]=pie"
+    },
+    {
+      "_id": "69929db01fbeb875061392f2",
+      "type": "events",
+      "name": "Completion Status",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "dashboard_log"
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "terms": {
+                "metadata.event_kind.raw": [
+                  "dashboard_log"
+                ]
+              }
+            },
+            "aggs": {
+              "metadata.status_text.raw": {
+                "terms": {
+                  "field": "metadata.status_text.raw",
+                  "size": 5,
+                  "min_doc_count": 1,
+                  "order": {
+                    "weight|sum": "desc"
+                  },
+                  "missing": "(none)"
+                },
+                "aggs": {
+                  "weight|sum": {
+                    "sum": {
+                      "field": "weight",
+                      "missing": 1
+                    }
+                  }
+                }
+              },
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&seg[metrics][0][metricName]=sum%28events%29&seg[groups][0][field]=metadata.status_text.raw&seg[groups][0][func]=terms&seg[groups][0][by]=metric&seg[chartType]=pie"
+    },
+    {
+      "_id": "69929db01fbeb875061392f4",
+      "type": "events",
+      "name": "Message Trend",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "dashboard_log"
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "entTmSrs": {
+            "filter": {
+              "terms": {
+                "metadata.event_kind.raw": [
+                  "dashboard_log"
+                ]
+              }
+            },
+            "aggs": {
+              "metadata.direction.raw": {
+                "terms": {
+                  "field": "metadata.direction.raw",
+                  "size": 5,
+                  "min_doc_count": 1,
+                  "order": {
+                    "weight|sum": "desc"
+                  },
+                  "missing": "(none)"
+                },
+                "aggs": {
+                  "request.time": {
+                    "date_histogram": {
+                      "field": "request.time",
+                      "interval": "1d",
+                      "time_zone": "Asia/Colombo"
+                    },
+                    "aggs": {
+                      "weight|sum": {
+                        "sum": {
+                          "field": "weight",
+                          "missing": 1
+                        }
+                      }
+                    }
+                  },
+                  "weight|sum": {
+                    "sum": {
+                      "field": "weight",
+                      "missing": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "time",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&evt_ts[metrics][0][metricName]=sum%28events%29&evt_ts[groups][0][field]=metadata.direction.raw&evt_ts[groups][0][func]=terms&evt_ts[groups][0][by]=metric&evt_ts[chartType]=bar"
+    },
+    {
+      "_id": "69929db11fbeb875061392f7",
+      "type": "events",
+      "name": "MT Distribution",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "dashboard_log"
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "terms": {
+                "metadata.event_kind.raw": [
+                  "dashboard_log"
+                ]
+              }
+            },
+            "aggs": {
+              "metadata.mt_type.raw": {
+                "terms": {
+                  "field": "metadata.mt_type.raw",
+                  "size": 5,
+                  "min_doc_count": 1,
+                  "order": {
+                    "weight|sum": "desc"
+                  },
+                  "missing": "(none)"
+                },
+                "aggs": {
+                  "weight|sum": {
+                    "sum": {
+                      "field": "weight",
+                      "missing": 1
+                    }
+                  }
+                }
+              },
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&evt_ts[metrics][0][metricName]=sum%28events%29&evt_ts[groups][0][field]=metadata.mt_type.raw&evt_ts[groups][0][func]=terms&evt_ts[groups][0][by]=metric&evt_ts[chartType]=bar&evt_ts[interval]=1h&seg[groups][0][field]=metadata.mt_type.raw&seg[groups][0][func]=terms&seg[groups][0][by]=metric&seg[metrics][0][metricName]=sum%28events%29"
+    },
+    {
+      "_id": "69929db258ec6369326521dd",
+      "type": "events",
+      "name": "Translation Failures",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "bool": {
+            "must": [
+              {
+                "terms": {
+                  "metadata.event_kind.raw": [
+                    "dashboard_log"
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "metadata.status_text.raw": [
+                    "failed"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "terms": {
+                      "metadata.event_kind.raw": [
+                        "dashboard_log"
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "metadata.status_text.raw": [
+                        "failed"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "aggs": {
+              "segment__Invalid Message": {
+                "filter": {
+                  "bool": {
+                    "must_not": {
+                      "terms": {
+                        "metadata.invalid_error.raw": [
+                          ""
+                        ]
+                      }
+                    }
+                  }
+                },
+                "aggs": {
+                  "weight|sum": {
+                    "sum": {
+                      "field": "weight",
+                      "missing": 1
+                    }
+                  }
+                }
+              },
+              "segment__Message not supported": {
+                "filter": {
+                  "bool": {
+                    "must_not": {
+                      "terms": {
+                        "metadata.not_supported_error.raw": [
+                          ""
+                        ]
+                      }
+                    }
+                  }
+                },
+                "aggs": {
+                  "weight|sum": {
+                    "sum": {
+                      "field": "weight",
+                      "missing": 1
+                    }
+                  }
+                }
+              },
+              "segment__Mandatory Field Not Present": {
+                "filter": {
+                  "bool": {
+                    "must_not": {
+                      "terms": {
+                        "metadata.field_error.raw": [
+                          ""
+                        ]
+                      }
+                    }
+                  }
+                },
+                "aggs": {
+                  "weight|sum": {
+                    "sum": {
+                      "field": "weight",
+                      "missing": 1
+                    }
+                  }
+                }
+              },
+              "segment__Other Error ": {
+                "filter": {
+                  "bool": {
+                    "must_not": {
+                      "terms": {
+                        "metadata.other_error.raw": [
+                          ""
+                        ]
+                      }
+                    }
+                  }
+                },
+                "aggs": {
+                  "weight|sum": {
+                    "sum": {
+                      "field": "weight",
+                      "missing": 1
+                    }
+                  }
+                }
+              },
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&evtcf[filtersGroups][0][filters][1][id]=b2275609&evtcf[filtersGroups][0][filters][1][field]=metadata.status_text.raw&evtcf[filtersGroups][0][filters][1][name]=&evtcf[filtersGroups][0][filters][1][op]=contains&evtcf[filtersGroups][0][filters][1][value][0]=failed&seg[metrics][0][metricName]=sum%28events%29&seg[chartType]=bar&seg[segments][0][name]=Invalid%20Message&seg[segments][0][filters][0][id]=bbd354cb&seg[segments][0][filters][0][field]=metadata.invalid_error.raw&seg[segments][0][filters][0][name]=&seg[segments][0][filters][0][op]=not_contain&seg[segments][0][filters][0][value][0]=&seg[segments][1][name]=Message%20not%20supported&seg[segments][1][filters][0][id]=fe01a068&seg[segments][1][filters][0][field]=metadata.not_supported_error.raw&seg[segments][1][filters][0][name]=&seg[segments][1][filters][0][op]=not_contain&seg[segments][1][filters][0][value][0]=&seg[segments][2][name]=Mandatory%20Field%20Not%20Present&seg[segments][2][filters][0][id]=6ce96f74&seg[segments][2][filters][0][field]=metadata.field_error.raw&seg[segments][2][filters][0][name]=&seg[segments][2][filters][0][op]=not_contain&seg[segments][2][filters][0][value][0]=&seg[segments][3][name]=Other%20Error%20&seg[segments][3][filters][0][id]=8a71c311&seg[segments][3][filters][0][field]=metadata.other_error.raw&seg[segments][3][filters][0][name]=&seg[segments][3][filters][0][op]=not_contain&seg[segments][3][filters][0][value][0]="
+    },
+    {
+      "_id": "69929db258ec6369326521e0",
+      "type": "events",
+      "name": "Recent Activity",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "dashboard_log"
+            ]
+          }
+        },
+        "size": 50,
+        "_source": [
+          "id",
+          "_id",
+          "org_id",
+          "app_id",
+          "user_id",
+          "user.created",
+          "company_id",
+          "company.created",
+          "anonymous_id",
+          "identified_user_id",
+          "event_type",
+          "action_name",
+          "weight",
+          "direction",
+          "duration_ms",
+          "request.time",
+          "request.uri",
+          "request.route",
+          "request.verb",
+          "request.ip_address",
+          "request.user_agent.name",
+          "response.status",
+          "response.time",
+          "insights.anomaly",
+          "insights.event_anomaly",
+          "request.graphql.operation_name",
+          "request.graphql.definitions",
+          "jsonrpc.request.method",
+          "jsonrpc.request.params.call__method",
+          "jsonrpc.response.error",
+          "vtype_ids",
+          "blocked_by",
+          "span.id",
+          "span.status",
+          "span.parent_id",
+          "trace_id",
+          "log.severity",
+          "resource",
+          "metadata.transaction_id",
+          "request.time",
+          "metadata.mt_type",
+          "metadata.direction",
+          "metadata.status_text"
+        ],
+        "sort": [
+          {
+            "request.time": {
+              "order": "desc",
+              "unmapped_type": "long"
+            }
+          }
+        ]
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "table",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&column_settings[renames][0][label]=metadata.transaction_id.raw&column_settings[renames][0][rename]=Transaction%20ID%20&column_settings[renames][1][label]=request.time&column_settings[renames][1][rename]=Request%20Time%20&column_settings[renames][2][label]=metadata.mt_type.raw&column_settings[renames][2][rename]=MT%20Type%20&column_settings[renames][3][label]=metadata.direction.raw&column_settings[renames][3][rename]=Direction%20&column_settings[renames][4][label]=metadata.status_text.raw&column_settings[renames][4][rename]=Status&shown_fields[0]=metadata.transaction_id.raw&shown_fields[1]=request.time&shown_fields[2]=metadata.mt_type.raw&shown_fields[3]=metadata.direction.raw&shown_fields[4]=metadata.status_text.raw"
+    },
+    {
+      "_id": "6992bcb458ec636932652264",
+      "type": "events",
+      "name": "Total Translation",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "dashboard_log"
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "terms": {
+                "metadata.event_kind.raw": [
+                  "dashboard_log"
+                ]
+              }
+            },
+            "aggs": {
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&seg[metrics][0][metricName]=sum%28events%29&seg[metrics][0][customName]=Total"
+    },
+    {
+      "_id": "6992bcb458ec636932652265",
+      "type": "events",
+      "name": "Successful",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "bool": {
+            "must": [
+              {
+                "terms": {
+                  "metadata.event_kind.raw": [
+                    "dashboard_log"
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "metadata.status_text.raw": [
+                    "successful"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "terms": {
+                      "metadata.event_kind.raw": [
+                        "dashboard_log"
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "metadata.status_text.raw": [
+                        "successful"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "aggs": {
+              "_id|cardinality": {
+                "cardinality": {
+                  "field": "_id"
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&evtcf[filtersGroups][0][filters][1][id]=a80dff10&evtcf[filtersGroups][0][filters][1][field]=metadata.status_text.raw&evtcf[filtersGroups][0][filters][1][name]=&evtcf[filtersGroups][0][filters][1][op]=contains&evtcf[filtersGroups][0][filters][1][value][0]=successful&seg[metrics][0][metricName]=count%28event_id%29&seg[metrics][0][customName]=Successful"
+    },
+    {
+      "_id": "6992bcb458ec636932652266",
+      "type": "events",
+      "name": "Failure",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "bool": {
+            "must": [
+              {
+                "terms": {
+                  "metadata.event_kind.raw": [
+                    "dashboard_log"
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "metadata.status_text.raw": [
+                    "failed"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "terms": {
+                      "metadata.event_kind.raw": [
+                        "dashboard_log"
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "metadata.status_text.raw": [
+                        "failed"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "aggs": {
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&evtcf[filtersGroups][0][filters][1][id]=15c143c0&evtcf[filtersGroups][0][filters][1][field]=metadata.status_text.raw&evtcf[filtersGroups][0][filters][1][name]=&evtcf[filtersGroups][0][filters][1][op]=contains&evtcf[filtersGroups][0][filters][1][value][0]=failed&seg[metrics][0][metricName]=sum%28events%29&seg[metrics][0][customName]=Failures"
+    },
+    {
+      "_id": "6992bcb458ec636932652267",
+      "type": "events",
+      "name": "Skipped",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "bool": {
+            "must": [
+              {
+                "terms": {
+                  "metadata.event_kind.raw": [
+                    "dashboard_log"
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "metadata.status_text.raw": [
+                    "skipped"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "terms": {
+                      "metadata.event_kind.raw": [
+                        "dashboard_log"
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "metadata.status_text.raw": [
+                        "skipped"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "aggs": {
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&evtcf[filtersGroups][0][filters][1][id]=5fa460b3&evtcf[filtersGroups][0][filters][1][field]=metadata.status_text.raw&evtcf[filtersGroups][0][filters][1][name]=&evtcf[filtersGroups][0][filters][1][op]=contains&evtcf[filtersGroups][0][filters][1][value][0]=skipped&seg[metrics][0][metricName]=sum%28events%29&seg[metrics][0][customName]=Skipped"
+    },
+    {
+      "_id": "6992bcb458ec636932652268",
+      "type": "events",
+      "name": "Outward",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "bool": {
+            "must": [
+              {
+                "terms": {
+                  "metadata.event_kind.raw": [
+                    "dashboard_log"
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "metadata.direction.raw": [
+                    "Outward"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "terms": {
+                      "metadata.event_kind.raw": [
+                        "dashboard_log"
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "metadata.direction.raw": [
+                        "Outward"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "aggs": {
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&evtcf[filtersGroups][0][filters][1][id]=a4c6ad5f&evtcf[filtersGroups][0][filters][1][field]=metadata.direction.raw&evtcf[filtersGroups][0][filters][1][name]=&evtcf[filtersGroups][0][filters][1][op]=contains&evtcf[filtersGroups][0][filters][1][value][0]=Outward&seg[metrics][0][metricName]=sum%28events%29&seg[metrics][0][customName]=Outward"
+    },
+    {
+      "_id": "6992bcb458ec636932652269",
+      "type": "events",
+      "name": "Inward",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "bool": {
+            "must": [
+              {
+                "terms": {
+                  "metadata.event_kind.raw": [
+                    "dashboard_log"
+                  ]
+                }
+              },
+              {
+                "terms": {
+                  "metadata.direction.raw": [
+                    "Inward"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "size": 0,
+        "aggs": {
+          "seg": {
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "terms": {
+                      "metadata.event_kind.raw": [
+                        "dashboard_log"
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "metadata.direction.raw": [
+                        "Inward"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "aggs": {
+              "weight|sum": {
+                "sum": {
+                  "field": "weight",
+                  "missing": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "segment",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&evtcf[filtersGroups][0][filters][1][id]=8ab96efa&evtcf[filtersGroups][0][filters][1][field]=metadata.direction.raw&evtcf[filtersGroups][0][filters][1][name]=&evtcf[filtersGroups][0][filters][1][op]=contains&evtcf[filtersGroups][0][filters][1][value][0]=Inward&seg[metrics][0][metricName]=sum%28events%29&seg[metrics][0][customName]=Inward"
+    },
+    {
+      "_id": "69929db758ec6369326521ee",
+      "type": "events",
+      "name": "Messages List",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "dashboard_log"
+            ]
+          }
+        },
+        "size": 50,
+        "_source": [
+          "id",
+          "_id",
+          "org_id",
+          "app_id",
+          "user_id",
+          "user.created",
+          "company_id",
+          "company.created",
+          "anonymous_id",
+          "identified_user_id",
+          "event_type",
+          "action_name",
+          "weight",
+          "direction",
+          "duration_ms",
+          "request.time",
+          "request.uri",
+          "request.route",
+          "request.verb",
+          "request.ip_address",
+          "request.user_agent.name",
+          "response.status",
+          "response.time",
+          "insights.anomaly",
+          "insights.event_anomaly",
+          "request.graphql.operation_name",
+          "request.graphql.definitions",
+          "jsonrpc.request.method",
+          "jsonrpc.request.params.call__method",
+          "jsonrpc.response.error",
+          "vtype_ids",
+          "blocked_by",
+          "span.id",
+          "span.status",
+          "span.parent_id",
+          "trace_id",
+          "log.severity",
+          "resource",
+          "metadata.transaction_id",
+          "metadata.source_file",
+          "metadata.mt_type",
+          "metadata.mx_type",
+          "metadata.direction",
+          "metadata.amount",
+          "metadata.currency",
+          "request.time",
+          "metadata.status_text"
+        ],
+        "sort": [
+          {
+            "request.time": {
+              "order": "desc",
+              "unmapped_type": "long"
+            }
+          }
+        ]
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "table",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&column_settings[renames][0][label]=metadata.transaction_id.raw&column_settings[renames][0][rename]=Reference%20ID&column_settings[renames][1][label]=metadata.source_file.raw&column_settings[renames][1][rename]=File%20Name&column_settings[renames][2][label]=metadata.mt_type.raw&column_settings[renames][2][rename]=Mt%20Message%20Type&column_settings[renames][3][label]=metadata.mx_type.raw&column_settings[renames][3][rename]=Mx%20Message%20Type&column_settings[renames][4][label]=metadata.direction.raw&column_settings[renames][4][rename]=Direction&column_settings[renames][5][label]=metadata.amount&column_settings[renames][5][rename]=Amount&column_settings[renames][6][label]=metadata.currency.raw&column_settings[renames][6][rename]=Currency&column_settings[renames][7][label]=request.time&column_settings[renames][7][rename]=Date%20Time&column_settings[renames][8][label]=metadata.status_text.raw&column_settings[renames][8][rename]=Status&shown_fields[0]=metadata.transaction_id.raw&shown_fields[1]=metadata.source_file.raw&shown_fields[2]=metadata.mt_type.raw&shown_fields[3]=metadata.mx_type.raw&shown_fields[4]=metadata.direction.raw&shown_fields[5]=metadata.amount&shown_fields[6]=metadata.currency.raw&shown_fields[7]=request.time&shown_fields[8]=metadata.status_text.raw"
+    },
+    {
+      "_id": "6992c1a458ec6369326522af",
+      "type": "events",
+      "name": "Original/Translated Message Comparison",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "dashboard_log"
+            ]
+          }
+        },
+        "size": 50,
+        "_source": [
+          "id",
+          "_id",
+          "org_id",
+          "app_id",
+          "user_id",
+          "user.created",
+          "company_id",
+          "company.created",
+          "anonymous_id",
+          "identified_user_id",
+          "event_type",
+          "action_name",
+          "weight",
+          "direction",
+          "duration_ms",
+          "request.time",
+          "request.uri",
+          "request.route",
+          "request.verb",
+          "request.ip_address",
+          "request.user_agent.name",
+          "response.status",
+          "response.time",
+          "insights.anomaly",
+          "insights.event_anomaly",
+          "request.graphql.operation_name",
+          "request.graphql.definitions",
+          "jsonrpc.request.method",
+          "jsonrpc.request.params.call__method",
+          "jsonrpc.response.error",
+          "vtype_ids",
+          "blocked_by",
+          "span.id",
+          "span.status",
+          "span.parent_id",
+          "trace_id",
+          "log.severity",
+          "resource",
+          "request._body",
+          "response._body"
+        ],
+        "sort": [
+          {
+            "request.time": {
+              "order": "desc",
+              "unmapped_type": "long"
+            }
+          }
+        ]
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "field_comparison",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=dashboard_log&events_accessor[comparisonFields][0]=request._body.moesif_body_root&events_accessor[comparisonFields][1]=response._body.moesif_body_root"
+    },
+    {
+      "_id": "69929db81fbeb87506139300",
+      "type": "events",
+      "name": "Ballerina Log Viewer ",
+      "args": "",
+      "es_query": {
+        "post_filter": {
+          "terms": {
+            "metadata.event_kind.raw": [
+              "ballerina_log"
+            ]
+          }
+        },
+        "size": 50,
+        "_source": [
+          "id",
+          "_id",
+          "org_id",
+          "app_id",
+          "user_id",
+          "user.created",
+          "company_id",
+          "company.created",
+          "anonymous_id",
+          "identified_user_id",
+          "event_type",
+          "action_name",
+          "weight",
+          "direction",
+          "duration_ms",
+          "request.time",
+          "request.uri",
+          "request.route",
+          "request.verb",
+          "request.ip_address",
+          "request.user_agent.name",
+          "response.status",
+          "response.time",
+          "insights.anomaly",
+          "insights.event_anomaly",
+          "request.graphql.operation_name",
+          "request.graphql.definitions",
+          "jsonrpc.request.method",
+          "jsonrpc.request.params.call__method",
+          "jsonrpc.response.error",
+          "vtype_ids",
+          "blocked_by",
+          "span.id",
+          "span.status",
+          "span.parent_id",
+          "trace_id",
+          "log.severity",
+          "resource",
+          "request.time",
+          "metadata.log_level",
+          "metadata.module",
+          "metadata.log_message"
+        ],
+        "sort": [
+          {
+            "request.time": {
+              "order": "desc",
+              "unmapped_type": "long"
+            }
+          }
+        ]
+      },
+      "dateRange": {
+        "from": "-7d",
+        "to": "now"
+      },
+      "view": "table",
+      "funnel_query": {},
+      "urlQuery": "?evtcf[filtersGroups][0][filters][0][id]=f0&evtcf[filtersGroups][0][filters][0][field]=metadata.event_kind.raw&evtcf[filtersGroups][0][filters][0][name]=&evtcf[filtersGroups][0][filters][0][op]=contains&evtcf[filtersGroups][0][filters][0][value][0]=ballerina_log&column_settings[renames][0][label]=request.time&column_settings[renames][0][rename]=Timestamp&column_settings[renames][1][label]=metadata.log_level.raw&column_settings[renames][1][rename]=Level&column_settings[renames][2][label]=metadata.module.raw&column_settings[renames][2][rename]=Module&column_settings[renames][3][label]=metadata.log_message.raw&column_settings[renames][3][rename]=Message&shown_fields[0]=request.time&shown_fields[1]=metadata.log_level.raw&shown_fields[2]=metadata.module.raw&shown_fields[3]=metadata.log_message.raw"
+    }
+  ]
+}
