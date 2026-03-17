@@ -21,8 +21,19 @@ import ballerina/log;
 import ballerina/time;
 
 public function main() returns error? {
-    time:Utc utc = time:utcNow();
-    string date = time:utcToString(utc).substring(0, 10);
+    
+    time:Zone|error zone = time:loadSystemZone();
+    
+    if zone is error {
+        return zone;
+    }
+    
+    time:Civil localCivilTime = zone.utcToCivil(time:utcNow());
+    string|error localCivilStr = time:civilToString(localCivilTime);
+    if localCivilStr is error {
+        return localCivilStr;
+    }
+    string date = localCivilStr.substring(0, 10);
     string filePath = log.ballerinaLogFilePath + "/ballerina-" + date + ".log";
     log:Error? outputFile = log:setOutputFile(filePath, log:APPEND);
     if outputFile is log:Error {
@@ -30,7 +41,7 @@ public function main() returns error? {
     }
 
     // Initialize log rotator for daily log rotation
-    initLogRotator();
+    check initLogRotator();
 
     if mtMxListener.enable {
         // Attach the service to the listener along with the resource path.
