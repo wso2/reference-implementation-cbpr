@@ -192,19 +192,6 @@ After application creation:
 
 ![Moesif API Keys](images/moesif-api-keys.png)
 
-### Step 4: Choose Subscription Plan 
-
-For production deployments, we recommend the **Growth Plan**:
-- **Cost**: $132/month (billed annually)
-- **Events/Month**: 1M to 15M events
-- **Team Members**: Unlimited
-- **Data Retention**: 365 days
-- **Support**: Priority support included
-
-**Free Plan** is available for testing:
-- 30k events/month
-- 7-day data retention
-
 ---
 
 ## Configuration Guide
@@ -223,306 +210,29 @@ curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
 # Extract and install according to your platform
 ```
 
-### Step 2: Create Fluent Bit Configuration (`fluent-bit.conf`)
+### Step 2: Configure Fluent Bit (`fluent-bit.conf`)
 
-```ini
-[SERVICE]
-    flush        1
-    daemon       Off
-    log_level    info
-    parsers_file /config/parsers.conf                   # <path to parsers config>
-    plugins_file /etc/fluent-bit/plugins.conf
-    http_server  On
-    http_listen  0.0.0.0
-    http_port    2020
-    storage.metrics on
+The main Fluent Bit configuration defines log inputs, Lua filter transformations, and HTTP output to Moesif. Update the `X-Moesif-Application-Id` header with your Collector Application ID obtained in the previous section.
 
-[INPUT]
-    Name             tail
-    Tag              mtmx
-    Path             /logs/dashboard*.log               # <path to dashboard logs>
-    Parser           json
-    Refresh_Interval 1
-    exit_on_eof      off
+📁 **Refer to:** [`config/fluent-bit.conf`](config/fluent-bit.conf)
 
-[INPUT]
-    Name             tail
-    Tag              ballerina_logs
-    Path             /logs/ballerina*.log               # <path to ballerina logs>
-    Parser           ballerina_json_parser
-    Refresh_Interval 1
-    exit_on_eof      off
+### Step 3: Configure Parsers (`parsers.conf`)
 
-[FILTER]
-    Name    lua
-    Match   mtmx
-    Script  /filter/dashboard-log-transform.lua        # <path to lua script>
-    Call    moesif_transform
+The parsers configuration defines JSON parsing rules for the different log formats (dashboard logs and Ballerina logs).
 
-[FILTER]
-    Name    lua
-    Match   ballerina_logs
-    Script  /filter/ballerina-log-transform.lua        # <path to lua script>
-    Call    ballerina_transform
+📁 **Refer to:** [`config/parsers.conf`](config/parsers.conf)
 
-[OUTPUT]
-    Name            http
-    Match           mtmx
-    Host            api.moesif.net
-    Port            443
-    URI             /v1/events/batch
-    Format          json
-    Header          X-Moesif-Application-Id <your moesif application id>
-    Header          Content-Type application/json
-    tls             On
-    tls.verify      On
-    json_date_format iso8601
+### Step 4: Dashboard Log Transform (`dashboard-log-transform.lua`)
 
-[OUTPUT]
-    Name            http
-    Match           ballerina_logs
-    Host            api.moesif.net
-    Port            443
-    URI             /v1/events/batch
-    Format          json
-    Header          X-Moesif-Application-Id <your moesif application id>
-    Header          Content-Type application/json
-    tls             On
-    tls.verify      On
-    json_date_format iso8601
-```
+This Lua script transforms SWIFT MT/MX dashboard logs into Moesif-compatible event format. It handles Base64 encoding of message bodies, XML detection for content-type assignment, and status normalization.
 
-📁 **Source file:** [`config/fluent-bit.conf`](config/fluent-bit.conf)
+📁 **Refer to:** [`filter/dashboard-log-transform.lua`](filter/dashboard-log-transform.lua)
 
-### Step 3: Create Parsers Configuration (`parsers.conf`)
+### Step 5: Ballerina Log Transform (`ballerina-log-transform.lua`)
 
-```ini
-[PARSER]
-    Name        ballerina_json_parser
-    Format      json
-    Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L%z
-    Time_Keep   On
+This Lua script transforms Ballerina application logs into Moesif-compatible event format, extracting log level, module, and listener information.
 
-[PARSER]
-    Name        json
-    Format      json
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-```
-
-📁 **Source file:** [`config/parsers.conf`](config/parsers.conf)
-
-### Step 4: Create Dashboard Log Transform (`dashboard-log-transform.lua`)
-
-```lua
--- Remove leading and trailing quotes from a string
-local function strip_quotes(s)
-    if type(s) == "string" then
-        return s:gsub('^"(.*)"$', '%1')
-    end
-    return s
-end
-
-local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-
-function enc(data)
-    return ((data:gsub('.', function(x)
-        local r,b='',x:byte()
-        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
-        return r;
-    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
-        if (#x < 6) then return '' end
-        local c=0
-        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
-        return b:sub(c+1,c+1)
-    end)..({ '', '==', '=' })[#data%3+1])
-end
-
-local function detectXml(message)
-    if not message or message == "" then
-        return false
-    end
-    local msg = tostring(message)
-    -- Pattern 1: Starts with < and contains >
-    if msg:match("^%s*<[%s%S]*>") then
-        return true
-    end
-    -- Pattern 2: Contains XML declaration
-    if msg:find("<?xml", 1, true) then
-        return true
-    end
-    -- Pattern 3: Contains SOAP Envelope
-    if msg:find("<Envelope", 1, true) then
-        return true
-    end
-    -- Pattern 4: Contains ISO 20022 Document
-    if msg:find("<Document", 1, true) then
-        return true
-    end
-    -- Pattern 5: Simple check - starts with <
-    if msg:match("^%s*<") then
-        return true
-    end
-    return false
-end
-
-local function getContentType(message)
-    if detectXml(message) then
-        return "application/xml"
-    else
-        return "text/plain"
-    end
-end
-
-function moesif_transform(tag, timestamp, record)
-    -- 1. Extract Raw Values
-    local fileId = record["id"] or ""
-    local refId = record["refId"] or ""
-    local user_id = "UNKNOWN"
-    if refId ~= "" then user_id = refId elseif fileId ~= "" then user_id = fileId end
-
-    local mtType = record["mtMessageType"] or ""
-    local mxType = record["mxMessageType"] or ""
-    local currency = record["currency"] or ""
-    local amount = tonumber(record["amount"]) or 0
-    local direction = record["direction"] or ""
-    local status = record["status"] or "unknown"
-    local log_date = record["date"] or os.date("!%Y-%m-%dT%H:%M:%SZ", timestamp)
-
-    local originalMsg = record["originalMessage"] or ""
-    local translatedMsg = record["translatedMessage"] or "N/A"
-    -- Remove extra quotes from translatedMsg if present
-    translatedMsg = strip_quotes(translatedMsg)
-
-    -- 2. Normalize Status
-    local statusNorm = string.lower(status)
-    local httpStatus = 400
-    if statusNorm == "successful" then
-        httpStatus = 200
-    elseif statusNorm == "skipped" then
-        httpStatus = 202
-    end
-
-    -- 3. Detect Message Content and Get Content-Type
-    local reqContentType = getContentType(originalMsg)
-    local resContentType = getContentType(translatedMsg)
-    local reqEncoding = "base64"
-    local resEncoding = "base64"
-
-    -- 4. Encode Messages
-    local reqBody = enc(originalMsg)
-    local resBody = enc(translatedMsg)
-
-    -- 5. Construct Metadata
-    local metadata = {
-        event_kind = "dashboard_log",
-        source_file = fileId,
-        date = log_date,
-        transaction_id = refId,
-        mt_type = mtType,
-        mx_type = mxType,
-        currency = currency,
-        amount = amount,
-        direction = direction,
-        status_text = statusNorm,
-        field_error = record["fieldError"] or "",
-        not_supported_error = record["notSupportedError"] or "",
-        invalid_error = record["invalidError"] or "",
-        other_error = record["otherError"] or ""
-    }
-
-    -- 6. Build Final Moesif Record
-    local moesif_record = {
-        request = {
-            time = log_date,
-            uri = "/swift-translation",
-            verb = "POST",
-            headers = {
-                ["Content-Type"] = reqContentType
-            },
-            body = reqBody,
-            transfer_encoding = reqEncoding
-        },
-        response = {
-            time = log_date,
-            status = httpStatus,
-            headers = {
-                ["Content-Type"] = resContentType
-            },
-            body = resBody,
-            transfer_encoding = resEncoding
-        },
-        user_id = user_id,
-        metadata = metadata
-    }
-
-    -- Return: Code 2 (Replace Record), Timestamp, New Record
-    return 2, timestamp, moesif_record
-end
-```
-
-📁 **Source file:** [`filter/dashboard-log-transform.lua`](filter/dashboard-log-transform.lua)
-
-### Step 5: Create Ballerina Log Transform (`ballerina-log-transform.lua`)
-
-```lua
-function ballerina_transform(tag, timestamp, record)
-    -- Extract fields from Ballerina log record
-    local time = record["time"] or os.date("!%Y-%m-%dT%H:%M:%S.000Z")
-    local level = record["level"] or "INFO"
-    local module = record["module"] or "unknown"
-    local message = record["message"] or ""
-
-    -- Extract listener name from module
-    local listenerName = extractListenerName(module)
-
-    -- Build metadata object with Ballerina-specific fields
-    local metadata = {
-        event_kind = "ballerina_log",
-        log_level = level,
-        module = module,
-        listener_name = listenerName,
-        log_message = message,
-        timestamp = time
-    }
-
-    -- Build Moesif event for Ballerina log
-    local moesif_record = {
-        timestamp = time,
-        request = {
-            time = time,
-            uri = "/ballerina/logs",
-            verb = "LOG",
-            headers = {
-                ["Content-Type"] = "text/plain"
-            },
-            body = ""
-        },
-        response = {
-            time = time,
-            status = 200,
-            headers = {},
-            body = {}
-        },
-        metadata = metadata
-    }
-
-    -- Return: code 2 (modify record), timestamp, moesif_record
-    return 2, timestamp, moesif_record
-end
-
--- Extract listener name from module string
-function extractListenerName(module)
-    if module == nil or module == "" then
-        return "Unknown"
-    end
-    
-    return module
-end
-```
-
-📁 **Source file:** [`filter/ballerina-log-transform.lua`](filter/ballerina-log-transform.lua)
+📁 **Refer to:** [`filter/ballerina-log-transform.lua`](filter/ballerina-log-transform.lua)
 
 ### Step 6: Start Fluent Bit
 
