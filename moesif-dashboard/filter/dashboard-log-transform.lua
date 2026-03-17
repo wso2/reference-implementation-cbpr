@@ -6,6 +6,8 @@ local function strip_quotes(s)
     return s
 end
 
+-- Standard Base64 encoding alphabet as defined in RFC 4648.
+-- Used by enc() to map each 6-bit value (0-63) to its corresponding encoded character.
 local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
 function enc(data)
