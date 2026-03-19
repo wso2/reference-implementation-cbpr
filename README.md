@@ -25,7 +25,7 @@ A comprehensive reference implementation for SWIFT MT ↔ MX message translation
 
 **💡 Just need Java 17+ to run!** No need to clone the repository or install development tools.
 
-**📊 Want the dashboard?** Set up [OpenSearch](https://opensearch.org/downloads/) and follow our [Dashboard Guide](dashboard/README.md).
+**📊 Want the dashboard?** Set up [OpenSearch](https://opensearch.org/downloads/) and follow our [OpenSearch Dashboard Guide](dashboard/opensearch-dashboard/README.md) or [Moesif Dashboard Guide](dashboard/moesif-dashboard/README.md).
 
 ---
 
@@ -68,7 +68,8 @@ A comprehensive reference implementation for SWIFT MT ↔ MX message translation
 
 | Component | Description | Status | Documentation |
 |-----------|-------------|---------|---------------|
-| **OpenSearch Dashboard** | Real-time analytics and monitoring | ✅ Available | [README](dashboard/swift_dashboard/) |
+| **OpenSearch Dashboard** | Real-time analytics and monitoring | ✅ Available | [README](dashboard/opensearch-dashboard/swift_dashboard/) |
+| **Moesif Dashboard** | API analytics with Moesif integration | ✅ Available | [README](dashboard/moesif-dashboard/) |
 | **Message Analytics** | Transaction analysis and reporting | ✅ Available | Part of Dashboard |
 | **Federated Authentication** | OIDC-based login with Asgardeo | ✅ Available | Part of Dashboard |
 
@@ -131,8 +132,8 @@ Refer to the sample [Config.toml](https://github.com/wso2/reference-implementati
 
 2. **Set up the dashboard (optional)**
    ```bash
-   cd dashboard/swift_dashboard/
-   # Follow the OpenSearch Dashboard setup guide in dashboard/README.md
+   cd dashboard/opensearch-dashboard/swift_dashboard/
+   # Follow the OpenSearch Dashboard setup guide in dashboard/opensearch-dashboard/README.md
    ```
 
 3. **Build from source**
@@ -149,12 +150,19 @@ reference-implementation-cbpr/
 ├── README.md                           # This file - general overview
 ├── LICENSE                            # Apache 2.0 License
 ├── dashboard/                         # Dashboard components
-│   └── swift_dashboard/               # OpenSearch Dashboard plugin
-│       ├── README.md                  # Dashboard setup guide
-│       ├── opensearch_dashboards.json # Plugin configuration
-│       ├── public/                    # Frontend React components
-│       ├── server/                    # Backend API endpoints
-│       └── package.json               # Dependencies and build scripts
+│   ├── opensearch-dashboard/          # OpenSearch Dashboard
+│   │   ├── README.md                  # OpenSearch dashboard setup guide
+│   │   └── swift_dashboard/           # OpenSearch Dashboard plugin
+│   │       ├── opensearch_dashboards.json # Plugin configuration
+│   │       ├── public/                # Frontend React components
+│   │       ├── server/                # Backend API endpoints
+│   │       └── package.json           # Dependencies and build scripts
+│   └── moesif-dashboard/             # Moesif Dashboard
+│       ├── README.md                  # Moesif dashboard setup guide
+│       ├── config/                    # Fluent Bit configuration
+│       ├── filter/                    # Lua transform scripts
+│       ├── dashboards/               # Dashboard templates
+│       └── images/                    # Documentation images
 ├── resources/                         # Shared resources
 │   └── translator-extensions-v1.0.0.yaml  # Extension API contract
 └── translator/                        # Translation implementations
@@ -252,7 +260,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 🆘 Support
 
-- **Dashboard Setup**: Follow the [Dashboard Setup Guide](dashboard/swift_dashboard/) for OpenSearch configuration
+- **Dashboard Setup**: Follow the [OpenSearch Dashboard Guide](dashboard/opensearch-dashboard/swift_dashboard/) or [Moesif Dashboard Guide](dashboard/moesif-dashboard/) for setup
 - **Integration Help**: Check individual integration READMEs for specific setup instructions
 - **Issues**: Report bugs using our [issue template](issue_template.md)
 - **WSO2 Support**: Contact WSO2 for enterprise support and consulting
